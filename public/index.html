@@ -27,10 +27,11 @@
     button.danger{background:var(--danger)}
     input[type="range"]{width:100%;max-width:100%;padding:8px 0;background:transparent;box-sizing:border-box;display:block}
     #chat{display:flex;flex-direction:column;gap:8px;padding:10px 0 120px}
-    .msg{padding:10px 12px;border-radius:14px;max-width:86%;white-space:pre-wrap;line-height:1.4}
+    .msg{padding:10px 12px;border-radius:14px;max-width:86%;white-space:pre-wrap;line-height:1.56;letter-spacing:.1px}
     .me{align-self:flex-end;background:#2a457a}
-    .bot{align-self:flex-start;background:var(--card)}
-    .scene-beat{font-size:12px;color:#8ec5ff;opacity:.95}
+    .bot{align-self:flex-start;background:#161b24;border:1px solid #232c3b}
+    .dialogue-text{font-size:15px;color:#e9edf7}
+    .scene-beat{font-size:13px;color:#8ec5ff;opacity:.96;font-style:italic}
     .meta{color:var(--muted);font-size:12px;margin:4px 2px}
     .status-line{font-size:11px;color:#8f9bb0;opacity:.9;padding:2px 4px;min-height:16px;margin-bottom:72px}
     .composer{position:fixed;left:0;right:0;bottom:0;background:linear-gradient(transparent,rgba(15,17,21,.9) 30%, rgba(15,17,21,1));padding:10px}
@@ -391,12 +392,16 @@
       let match;
 
       while ((match = tokenRe.exec(src)) !== null) {
-        out += escapeHtml(src.slice(last, match.index));
+        const plain = src.slice(last, match.index);
+        if (plain) out += `<span class="dialogue-text">${escapeHtml(plain)}</span>`;
         out += `<span class="scene-beat">${escapeHtml(match[0])}</span>`;
         last = tokenRe.lastIndex;
       }
 
-      out += escapeHtml(src.slice(last));
+      const tail = src.slice(last);
+      if (tail) out += `<span class="dialogue-text">${escapeHtml(tail)}</span>`;
+
+      if (!out) out = `<span class="dialogue-text">${escapeHtml(src)}</span>`;
       return out.replace(/\n/g, '<br>');
     }
 
