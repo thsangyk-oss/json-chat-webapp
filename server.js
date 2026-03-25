@@ -93,39 +93,54 @@ function writeLorebook(contextName, data) {
 function matchLorebook(contextName, scanText) {
   const lb = readLorebook(contextName);
   const entries = (lb.entries || []).filter(e => e.enabled !== false);
-
-  const matched = [];
   const text = (scanText || '').toLowerCase();
 
+  const matched = [];
+  const seen = new Set();
+
   for (const entry of entries) {
-    if (entry.constant) {
-      matched.push(entry);
-      continue;
-    }
     const keywords = Array.isArray(entry.keywords) ? entry.keywords : [];
-    for (const kw of keywords) {
-      if (kw && text.includes(kw.toLowerCase())) {
-        matched.push(entry);
-        break;
-      }
-    }
+    const hits = entry.constant ? 1 : keywordMatchCount(text, keywords);
+    if (!entry.constant && hits === 0) continue;
+
+    const content = resolveLorebookEntryText(entry);
+    if (!content) continue;
+
+    const key = `${keywords.join('|')}::${content}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    matched.push({
+      ...entry,
+      content,
+      _score: (entry.constant ? 1000 : 0) + ((entry.priority || 0) * 10) + hits,
+    });
   }
 
   if (!matched.length) return '';
+  matched.sort((a, b) => b._score - a._score || b.content.length - a.content.length);
 
-  // Sort by priority desc
-  matched.sort((a, b) => (b.priority || 0) - (a.priority || 0));
-
-  let result = '';
+  const lines = [];
+  let used = '[WORLD INFO]\n'.length;
   for (const entry of matched) {
-    const line = (entry.content || '').trim();
-    if (!line) continue;
-    const candidate = result ? result + '\n' + line : line;
-    if (candidate.length > LOREBOOK_BUDGET) break;
-    result = candidate;
+    const prefix = lines.length ? '\n' : '';
+    let line = entry.content;
+    const remaining = LOREBOOK_BUDGET - used - prefix.length;
+    if (remaining <= 0) break;
+
+    if (line.length > remaining) {
+      if (remaining < 80) continue;
+      line = line.slice(0, remaining).trim();
+      const lastPunc = Math.max(line.lastIndexOf('. '), line.lastIndexOf('! '), line.lastIndexOf('? '), line.lastIndexOf('; '));
+      if (lastPunc > 60) line = line.slice(0, lastPunc + 1).trim();
+      if (!line) continue;
+    }
+
+    lines.push(line);
+    used += prefix.length + line.length;
   }
 
-  return result ? `[WORLD INFO]\n${result}` : '';
+  return lines.length ? `[WORLD INFO]\n${lines.join('\n')}` : '';
 }
 
 // ── Chat Summarize helpers ──
@@ -134,15 +149,17 @@ function matchLorebook(contextName, scanText) {
  */
 async function summarizeOldMessages(session, ai) {
   if (!session.summaries) session.summaries = [];
-  if (!session.messages || session.messages.length <= SUMMARIZE_THRESHOLD) return;
+  if (!session.messages || session.messages.length < SUMMARIZE_THRESHOLD) return false;
 
-  const chunk = session.messages.splice(0, SUMMARIZE_CHUNK);
+  const chunkSize = Math.min(SUMMARIZE_CHUNK, Math.max(2, session.messages.length - (SUMMARIZE_THRESHOLD - SUMMARIZE_CHUNK)));
+  const chunk = session.messages.slice(0, chunkSize);
+  if (!chunk.length) return false;
 
   try {
     const brain = readBrain();
     const lang = langInstruction(ai);
-    const chatLines = chunk.map(m => `${m.role === 'user' ? 'User' : 'Character'}: ${(m.content || '').slice(0, 300)}`).join('\n');
-    const prompt = `${lang}\nSummarize the following roleplay chat messages into a concise narrative paragraph. Preserve key plot points, character actions, location changes, and emotional beats. Write in past tense.\n\n${chatLines}`;
+    const chatLines = chunk.map(m => `${m.role === 'user' ? 'User' : 'Character'}: ${normalizeMessageContent(m).slice(0, 300)}`).join('\\n');
+    const prompt = `${lang}\\nSummarize the following roleplay chat messages into a concise narrative paragraph. Preserve key plot points, character actions, location changes, and emotional beats. Write in past tense. Keep concrete details.\\n\\n${chatLines}`;
 
     const r = await fetch(`${brain.baseUrl}/chat/completions`, {
       method: 'POST',
@@ -155,14 +172,17 @@ async function summarizeOldMessages(session, ai) {
       })
     });
 
-    if (r.ok) {
-      const data = await r.json();
-      const summary = (data?.choices?.[0]?.message?.content || '').trim();
-      if (summary) session.summaries.push(summary);
-    }
+    if (!r.ok) return false;
+    const data = await r.json();
+    const summary = (data?.choices?.[0]?.message?.content || '').trim();
+    if (!summary) return false;
+
+    session.messages.splice(0, chunk.length);
+    session.summaries.push(summary);
+    session.summaries = session.summaries.slice(-12);
+    return true;
   } catch {
-    // Restore chunk on failure
-    session.messages.unshift(...chunk);
+    return false;
   }
 }
 
@@ -180,13 +200,31 @@ async function semanticRecall(contextName, query, ai) {
   const allEps = readNdjson(files.episodes);
   if (!allEps.length) return '';
 
+  const q = String(query || '').toLowerCase().trim();
+  const qTerms = q.split(/[^\wÀ-ỹ]+/).filter(Boolean).filter(w => w.length > 1);
+
+  const scored = allEps.map((e, i) => {
+    const hay = `${e.summary || ''} ${e.user || ''} ${(e.tags || []).join(' ')}`.toLowerCase();
+    const termHits = qTerms.reduce((n, term) => n + (hay.includes(term) ? 1 : 0), 0);
+    const importance = Number(e.importance || 0);
+    const recency = i / Math.max(1, allEps.length - 1);
+    const exactBoost = q && hay.includes(q) ? 2.5 : 0;
+    return { idx: i, ep: e, score: exactBoost + termHits * 1.4 + importance * 2 + recency * 0.35 };
+  }).sort((a, b) => b.score - a.score);
+
+  const lexicalTop = scored.slice(0, 8);
+  if (!lexicalTop.length || lexicalTop[0].score <= 0) return '';
+  let ranked = lexicalTop;
+
   try {
     const brain = readBrain();
     const lang = langInstruction(ai);
-    const epLines = allEps.map((e, i) => `[${i}] ${e.ts ? e.ts.slice(0, 16) : ''} ${(e.summary || e.user || '').slice(0, 150)}`);
-    const epText = epLines.join('\n');
+    const epText = lexicalTop.map(({ idx, ep }) => {
+      const tags = (ep.tags || []).join(', ');
+      return `[${idx}] ts=${ep.ts ? ep.ts.slice(0, 16) : ''} importance=${Number(ep.importance || 0).toFixed(2)} tags=${tags}\\nsummary=${(ep.summary || '').slice(0, 180)}\\nuser=${(ep.user || '').slice(0, 180)}`;
+    }).join('\\n\\n');
 
-    const prompt = `${lang}\nGiven these past roleplay events:\n${epText}\n\nUser question: "${query}"\n\nFind the 3 most relevant event indices. Respond with ONLY a JSON array of indices like [2, 5, 11]. No explanation.`;
+    const prompt = `${lang}\\nYou are ranking past roleplay memories for relevance.\\nUser question: "${query}"\\n\\nCandidate events:\\n${epText}\\n\\nReturn ONLY a JSON array with the 3 best candidate indices in descending relevance, like [12, 4, 9]. Prefer exact topic match, then semantic relevance, then importance.`;
 
     const r = await fetch(`${brain.baseUrl}/chat/completions`, {
       method: 'POST',
@@ -195,31 +233,36 @@ async function semanticRecall(contextName, query, ai) {
         model: MINI_MODEL,
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.0,
-        max_completion_tokens: 60,
+        max_completion_tokens: 80,
       })
     });
 
-    if (!r.ok) return '';
-    const data = await r.json();
-    const raw = (data?.choices?.[0]?.message?.content || '').trim();
-
-    // Parse indices
-    const m = raw.match(/\[[\d,\s]+\]/);
-    if (!m) return '';
-    const indices = JSON.parse(m[0]).filter(i => Number.isInteger(i) && i >= 0 && i < allEps.length);
-
-    let result = '';
-    for (const idx of indices) {
-      const e = allEps[idx];
-      const line = `- ${e.ts ? e.ts.slice(0, 16) : ''}: ${(e.summary || e.user || '').slice(0, 200)}`;
-      if ((result + '\n' + line).length > RECALL_BUDGET) break;
-      result = result ? result + '\n' + line : line;
+    if (r.ok) {
+      const data = await r.json();
+      const raw = (data?.choices?.[0]?.message?.content || '').trim();
+      const m = raw.match(/\[[\d,\s]+\]/);
+      if (m) {
+        const wanted = JSON.parse(m[0]).filter(i => Number.isInteger(i));
+        const map = new Map(lexicalTop.map(item => [item.idx, item]));
+        const reranked = wanted.map(i => map.get(i)).filter(Boolean);
+        if (reranked.length) {
+          const leftovers = lexicalTop.filter(item => !wanted.includes(item.idx));
+          ranked = [...reranked, ...leftovers];
+        }
+      }
     }
+  } catch {}
 
-    return result ? `[RECALLED MEMORIES]\n${result}` : '';
-  } catch {
-    return '';
+  let result = '';
+  for (const { ep } of ranked.slice(0, 5)) {
+    const tags = (ep.tags || []).length ? ` [${ep.tags.join(', ')}]` : '';
+    const line = `- ${ep.ts ? ep.ts.slice(0, 16) : ''}${tags}: ${(ep.summary || ep.user || '').slice(0, 220)}`;
+    const candidate = result ? `${result}\n${line}` : line;
+    if (candidate.length > RECALL_BUDGET) break;
+    result = candidate;
   }
+
+  return result ? `[RECALLED MEMORIES]\n${result}` : '';
 }
 
 function createSession(context, title = 'Chat 1') {
@@ -347,7 +390,7 @@ function readState() {
 }
 
 function writeState(state) {
-  fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2));
+  atomicWriteJson(STATE_FILE, state);
 }
 
 function getSessionsForContext(state, context) {
@@ -461,6 +504,71 @@ function readNdjson(file) {
 
 function writeJson(file, data) {
   fs.writeFileSync(file, JSON.stringify(data, null, 2));
+}
+
+const memoryOpQueues = new Map();
+
+function atomicWriteJson(file, data) {
+  const tmp = `${file}.tmp`;
+  fs.writeFileSync(tmp, JSON.stringify(data, null, 2));
+  fs.renameSync(tmp, file);
+}
+
+function queueMemoryOp(contextName, task) {
+  const key = safeName(contextName || 'default');
+  const prev = memoryOpQueues.get(key) || Promise.resolve();
+  const next = prev.catch(() => {}).then(task);
+  memoryOpQueues.set(key, next.finally(() => {
+    if (memoryOpQueues.get(key) === next) memoryOpQueues.delete(key);
+  }));
+  return next;
+}
+
+function normalizeMessageContent(msg) {
+  if (!msg) return '';
+  if (Array.isArray(msg.alternatives) && msg.alternatives.length) {
+    const idx = Number.isInteger(msg.activeIndex) ? msg.activeIndex : 0;
+    return msg.alternatives[idx] || msg.alternatives[0] || msg.content || '';
+  }
+  return msg.content || '';
+}
+
+function cloneMessagesForPrompt(messages) {
+  return (messages || []).map(m => ({ role: m.role, content: normalizeMessageContent(m) }));
+}
+
+function updateSessionMeta(session, userText) {
+  session.updatedAt = nowIso();
+  if ((!session.title || session.title === 'New chat' || session.title === 'Chat 1') && userText) {
+    session.title = userText.slice(0, 30);
+  }
+}
+
+function scheduleSessionMaintenance(contextName, sessionId, ai, userText, assistantText) {
+  queueMemoryOp(contextName, async () => {
+    if (userText && assistantText) {
+      const extracted = await llmExtractMemory(userText, assistantText, contextName, ai);
+      if (extracted) await applyLlmMemory(contextName, userText, assistantText, extracted);
+    }
+    const freshState = readState();
+    const freshSession = freshState.sessions?.[sessionId];
+    if (!freshSession) return;
+    const changed = await summarizeOldMessages(freshSession, ai);
+    if (changed) writeState(freshState);
+  }).catch(() => {});
+}
+
+function resolveLorebookEntryText(entry) {
+  return String(entry?.content || '').replace(/\s+/g, ' ').trim();
+}
+
+function keywordMatchCount(text, keywords) {
+  let hits = 0;
+  for (const kw of keywords || []) {
+    const k = String(kw || '').trim().toLowerCase();
+    if (k && text.includes(k)) hits += 1;
+  }
+  return hits;
 }
 
 function readMemorySnippet(contextName, maxChars = 2600) {
@@ -719,11 +827,9 @@ Rules:
 
 async function applyLlmMemory(contextName, userText, assistantText, extracted) {
   if (!extracted) return;
-  if ((extracted.importance || 0) < 0.15) return; // truly trivial, skip entirely
+  if ((extracted.importance || 0) < 0.15) return;
 
   const files = ensureMemoryV2(contextName);
-
-  // Dedup: skip if last episode same user text
   const existingEps = readNdjson(files.episodes);
   const lastEp = existingEps[existingEps.length - 1];
   if (lastEp && lastEp.user === userText) return;
@@ -731,7 +837,6 @@ async function applyLlmMemory(contextName, userText, assistantText, extracted) {
   const profile = JSON.parse(fs.readFileSync(files.profile, 'utf8'));
   const state = JSON.parse(fs.readFileSync(files.state, 'utf8'));
 
-  // Save episode if importance enough
   if (extracted.importance >= 0.25) {
     const episode = {
       ts: nowIso(),
@@ -741,10 +846,9 @@ async function applyLlmMemory(contextName, userText, assistantText, extracted) {
       importance: extracted.importance,
       tags: extracted.tags || [],
     };
-    fs.appendFileSync(files.episodes, JSON.stringify(episode) + '\n');
+    fs.appendFileSync(files.episodes, JSON.stringify(episode) + '\\n');
   }
 
-  // Update state
   if (extracted.location) state.location = extracted.location.slice(0, 60);
   if (extracted.mood) state.mood = extracted.mood.slice(0, 40);
   if (extracted.objective) {
@@ -755,7 +859,6 @@ async function applyLlmMemory(contextName, userText, assistantText, extracted) {
   }
   state.lastUpdated = nowIso();
 
-  // Update profile
   if (extracted.userInfo) {
     const info = extracted.userInfo.slice(0, 220);
     if (!profile.facts.includes(info)) {
@@ -763,7 +866,6 @@ async function applyLlmMemory(contextName, userText, assistantText, extracted) {
       profile.facts = profile.facts.slice(-30);
     }
 
-    // Name extraction
     const m = extracted.userInfo.match(/(?:name is|named|called|tên là|gọi là)\s+([^\s,.!?]+)/i);
     if (m) {
       const newName = m[1].trim();
@@ -785,43 +887,36 @@ async function applyLlmMemory(contextName, userText, assistantText, extracted) {
     }
   }
 
-  // Pin if tagged
   if ((extracted.tags || []).includes('pin')) {
     profile.pinned = profile.pinned || [];
     const pin = (extracted.summary || userText).slice(0, 220);
     if (!profile.pinned.includes(pin)) {
       profile.pinned.push(pin);
-      profile.pinned = profile.pinned.slice(-50);
+      profile.pinned = profile.pinned.slice(-20);
     }
   }
 
-  // Preferences
   if ((extracted.tags || []).includes('preference') && extracted.userInfo) {
-    if (!profile.preferences.includes(extracted.userInfo.slice(0, 220))) {
-      profile.preferences.push(extracted.userInfo.slice(0, 220));
-      profile.preferences = profile.preferences.slice(-30);
+    profile.preferences = profile.preferences || [];
+    const pref = extracted.userInfo.slice(0, 220);
+    if (!profile.preferences.includes(pref)) {
+      profile.preferences.push(pref);
+      profile.preferences = profile.preferences.slice(-20);
     }
   }
 
-  writeJson(files.profile, profile);
-  writeJson(files.state, state);
+  profile.conflictCount = readNdjson(files.conflicts).length;
+  atomicWriteJson(files.profile, profile);
+  atomicWriteJson(files.state, state);
 
-  // Append to memory.md only for significant events
   if (extracted.importance >= 0.3 && extracted.summary) {
     const tags = (extracted.tags || []).length ? `[${extracted.tags.join(',')}]` : '';
     appendMemoryEvent(contextName, `${tags} ${extracted.summary}`);
   }
-
-  // Story progress to memory.md
   if (extracted.storyProgress && extracted.importance >= 0.4) {
     appendMemoryEvent(contextName, `[plot] ${extracted.storyProgress}`);
   }
-
-  // Rolling summary
-  const eps = readNdjson(files.episodes);
-  if (eps.length && eps.length % 15 === 0) {
-    summarizeNow(contextName);
-  }
+  summarizeNow(contextName);
 }
 
 function loadContext(filename) {
@@ -872,7 +967,7 @@ function sendFile(res, filePath) {
       res.writeHead(404);
       return res.end('Not found');
     }
-    res.writeHead(200, { 'Content-Type': type });
+    res.writeHead(200, { 'Content-Type': type, 'Cache-Control': 'no-cache, no-store, must-revalidate' });
     res.end(data);
   });
 }
@@ -1245,6 +1340,58 @@ ${recallBlock ? '\n' + recallBlock : ''}`;
   };
 }
 
+function findEditableMessage(session, index, role = null) {
+  const msgs = session?.messages || [];
+  if (!Number.isInteger(index) || index < 0 || index >= msgs.length) return null;
+  const msg = msgs[index];
+  if (role && msg.role !== role) return null;
+  return msg;
+}
+
+function buildSessionPrompt(state, session, ai, userText) {
+  const ctxCard = loadContext(state.activeContext);
+  const memorySnippet = readMemorySnippet(state.activeContext);
+  const assistantScan = [...(session.messages || [])].reverse().find(m => m.role === 'assistant');
+  const scanText = `${userText}\n${assistantScan ? normalizeMessageContent(assistantScan) : ''}`;
+  const lorebookBlock = matchLorebook(state.activeContext, scanText);
+  const blocks = buildPromptBlocks(ctxCard, ai, session, lorebookBlock, memorySnippet, '');
+  const maxHistory = ai.contextWindowMode === '500_messages' ? 500 : 140;
+  const history = cloneMessagesForPrompt((session.messages || []).slice(-maxHistory));
+  const parsedTurn = parseUserRoleplayTurn(userText);
+  const roleplayHint = parsedTurn.actions.length ? `\n\n[User Actions]\n- ${parsedTurn.actions.join('\n- ')}` : '';
+  const userMsg = { role: 'user', content: `${userText}${roleplayHint}` };
+  return buildPromptMessages(blocks, ai, history, userMsg);
+}
+
+async function regenerateAssistantReply(state, session, assistantIndex) {
+  const msgs = session.messages || [];
+  const assistantMsg = findEditableMessage(session, assistantIndex, 'assistant');
+  if (!assistantMsg) throw new Error('Assistant message not found');
+
+  let userIndex = -1;
+  for (let i = assistantIndex - 1; i >= 0; i--) {
+    if (msgs[i].role === 'user') { userIndex = i; break; }
+  }
+  if (userIndex === -1) throw new Error('No preceding user message found');
+
+  const userText = msgs[userIndex].content || '';
+  const ai = getContextAiSettings(state, state.activeContext);
+  const promptSession = { ...session, messages: msgs.slice(0, userIndex), summaries: [...(session.summaries || [])] };
+  const promptMsgs = buildSessionPrompt(state, promptSession, ai, userText);
+  const assistant = await chatCompletion(promptMsgs, ai);
+  const newReply = assistant.content || '';
+
+  if (!Array.isArray(assistantMsg.alternatives) || !assistantMsg.alternatives.length) {
+    assistantMsg.alternatives = [assistantMsg.content || ''];
+  }
+  assistantMsg.alternatives.push(newReply);
+  assistantMsg.activeIndex = assistantMsg.alternatives.length - 1;
+  assistantMsg.content = newReply;
+  updateSessionMeta(session, userText);
+
+  return { reply: newReply, reasoning: assistant };
+}
+
 const server = http.createServer(async (req, res) => {
   const parsed = url.parse(req.url, true);
   const pathname = parsed.pathname;
@@ -1597,6 +1744,53 @@ button:hover{background:#5a8fd5}.err{color:#ff6b6b;font-size:13px;display:none}<
     }
   }
 
+  if (pathname === '/api/chat-stream' && req.method === 'POST') {
+    try {
+      const body = await readBody(req);
+      const userText = (body.message || '').trim();
+      if (!userText) return json(res, 400, { error: 'Empty message' });
+
+      const state = readState();
+      ensureActiveSession(state);
+      const session = state.sessions[state.activeSessionId];
+      const ai = getContextAiSettings(state, state.activeContext);
+
+      let recallBlock = '';
+      if (RECALL_REGEX.test(userText)) recallBlock = await semanticRecall(state.activeContext, userText, ai);
+
+      const ctxCard = loadContext(state.activeContext);
+      const memorySnippet = readMemorySnippet(state.activeContext);
+      const assistantScan = [...(session.messages || [])].reverse().find(m => m.role === 'assistant');
+      const lorebookBlock = matchLorebook(state.activeContext, `${userText}\n${assistantScan ? normalizeMessageContent(assistantScan) : ''}`);
+      const blocks = buildPromptBlocks(ctxCard, ai, session, lorebookBlock, memorySnippet, recallBlock);
+      const maxHistory = ai.contextWindowMode === '500_messages' ? 500 : 140;
+      const history = cloneMessagesForPrompt((session.messages || []).slice(-maxHistory));
+      const parsedTurn = parseUserRoleplayTurn(userText);
+      const roleplayHint = parsedTurn.actions.length ? `\n\n[User Actions]\n- ${parsedTurn.actions.join('\n- ')}` : '';
+      const userMsg = { role: 'user', content: `${userText}${roleplayHint}` };
+      const msgs = buildPromptMessages(blocks, ai, history, userMsg);
+
+      res.writeHead(200, {
+        'Content-Type': 'text/event-stream; charset=utf-8',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Connection': 'keep-alive',
+      });
+
+      const assistant = await chatCompletionStream(msgs, ai, res);
+      const assistantText = assistant.content || '';
+      session.messages.push({ role: 'user', content: userText }, { role: 'assistant', content: assistantText, alternatives: [assistantText], activeIndex: 0 });
+      updateSessionMeta(session, userText);
+      writeState(state);
+      scheduleSessionMaintenance(state.activeContext, state.activeSessionId, ai, userText, assistantText);
+
+      res.write(`data: ${JSON.stringify({ done: true, content: assistantText, reasoning: { enabled: ai.reasoning === 'on', reasoningTokens: assistant.reasoningTokens || 0, reasoningContent: assistant.reasoningContent || '', model: assistant.model } })}\n\n`);
+      return res.end();
+    } catch (e) {
+      try { res.write(`data: ${JSON.stringify({ error: e.message, done: true })}\n\n`); } catch {}
+      return res.end();
+    }
+  }
+
   if (pathname === '/api/chat' && req.method === 'POST') {
     try {
       const body = await readBody(req);
@@ -1610,68 +1804,27 @@ button:hover{background:#5a8fd5}.err{color:#ff6b6b;font-size:13px;display:none}<
       const ai = getContextAiSettings(state, state.activeContext);
 
       const memorySnippet = readMemorySnippet(state.activeContext);
-      const lorebookBlock = matchLorebook(state.activeContext, userText);
+      const assistantScan = [...(session.messages || [])].reverse().find(m => m.role === 'assistant');
+      const lorebookBlock = matchLorebook(state.activeContext, `${userText}\n${assistantScan ? normalizeMessageContent(assistantScan) : ''}`);
 
-      // Detect recall question and fetch semantic memories
       let recallBlock = '';
-      if (RECALL_REGEX.test(userText)) {
-        recallBlock = await semanticRecall(state.activeContext, userText, ai);
-      }
+      if (RECALL_REGEX.test(userText)) recallBlock = await semanticRecall(state.activeContext, userText, ai);
 
       const blocks = buildPromptBlocks(ctx, ai, session, lorebookBlock, memorySnippet, recallBlock);
       const maxHistory = ai.contextWindowMode === '500_messages' ? 500 : 140;
-      const history = (session.messages || []).slice(-maxHistory).map(m => ({
-        role: m.role,
-        content: m.alternatives ? m.alternatives[m.activeIndex ?? 0] : m.content
-      }));
+      const history = cloneMessagesForPrompt((session.messages || []).slice(-maxHistory));
 
       const parsedTurn = parseUserRoleplayTurn(userText);
-      const roleplayHint = parsedTurn.actions.length
-        ? `\n\n[User Actions]\n- ${parsedTurn.actions.join('\n- ')}`
-        : '';
+      const roleplayHint = parsedTurn.actions.length ? `\n\n[User Actions]\n- ${parsedTurn.actions.join('\n- ')}` : '';
       const userMsg = { role: 'user', content: `${userText}${roleplayHint}` };
-
       const msgs = buildPromptMessages(blocks, ai, history, userMsg);
 
       const assistant = await chatCompletion(msgs, ai);
       const assistantText = assistant.content;
-
-      const userMsgStored = { role: 'user', content: userText };
-      const assistantMsgStored = {
-        role: 'assistant',
-        content: assistantText,
-        alternatives: [assistantText],
-        activeIndex: 0,
-      };
-      session.messages.push(userMsgStored, assistantMsgStored);
-
-      // LLM memory extraction (async, doesn't block response)
-      llmExtractMemory(userText, assistantText, state.activeContext, ai).then(extracted => {
-        if (extracted) applyLlmMemory(state.activeContext, userText, assistantText, extracted);
-      }).catch(() => {});
-
-      // Chat summarize: fire-and-forget after saving
-      if (session.messages.length > SUMMARIZE_THRESHOLD) {
-        const sessionId = state.activeSessionId;
-        const contextName = state.activeContext;
-        summarizeOldMessages(session, ai).then(() => {
-          try {
-            const freshState = readState();
-            if (freshState.sessions[sessionId]) {
-              freshState.sessions[sessionId].messages = session.messages;
-              freshState.sessions[sessionId].summaries = session.summaries;
-              writeState(freshState);
-            }
-          } catch {}
-        }).catch(() => {});
-      }
-
-      session.updatedAt = nowIso();
-      if (!session.title || session.title === 'New chat' || session.title === 'Chat 1') {
-        session.title = userText.slice(0, 30);
-      }
-
+      session.messages.push({ role: 'user', content: userText }, { role: 'assistant', content: assistantText, alternatives: [assistantText], activeIndex: 0 });
+      updateSessionMeta(session, userText);
       writeState(state);
+      scheduleSessionMaintenance(state.activeContext, state.activeSessionId, ai, userText, assistantText);
 
       return json(res, 200, {
         reply: assistantText,
@@ -1685,6 +1838,90 @@ button:hover{background:#5a8fd5}.err{color:#ff6b6b;font-size:13px;display:none}<
           model: assistant.model,
         }
       });
+    } catch (e) {
+      return json(res, 500, { error: e.message });
+    }
+  }
+
+  if (pathname === '/api/swipe' && req.method === 'POST') {
+    try {
+      const body = await readBody(req);
+      const direction = body.direction;
+      const msgIndex = Number(body.msgIndex);
+      if (!['next', 'prev', 'new'].includes(direction)) return json(res, 400, { error: 'Invalid direction' });
+      if (!Number.isInteger(msgIndex)) return json(res, 400, { error: 'msgIndex required' });
+
+      const state = readState();
+      ensureActiveSession(state);
+      const session = state.sessions[state.activeSessionId];
+      const msg = findEditableMessage(session, msgIndex, 'assistant');
+      if (!msg) return json(res, 404, { error: 'Assistant message not found' });
+
+      if (!Array.isArray(msg.alternatives) || !msg.alternatives.length) msg.alternatives = [msg.content || ''];
+      if (!Number.isInteger(msg.activeIndex)) msg.activeIndex = 0;
+
+      if (direction === 'next') {
+        msg.activeIndex = (msg.activeIndex + 1) % msg.alternatives.length;
+        msg.content = msg.alternatives[msg.activeIndex];
+      } else if (direction === 'prev') {
+        msg.activeIndex = (msg.activeIndex - 1 + msg.alternatives.length) % msg.alternatives.length;
+        msg.content = msg.alternatives[msg.activeIndex];
+      } else {
+        const out = await regenerateAssistantReply(state, session, msgIndex);
+        msg.content = out.reply;
+      }
+
+      updateSessionMeta(session, '');
+      writeState(state);
+      return json(res, 200, { ok: true, msgIndex, content: msg.content, current: msg.activeIndex, total: msg.alternatives.length, variants: msg.alternatives });
+    } catch (e) {
+      return json(res, 500, { error: e.message });
+    }
+  }
+
+  if (pathname === '/api/edit-message' && req.method === 'POST') {
+    try {
+      const body = await readBody(req);
+      const index = Number(body.index);
+      const content = typeof body.content === 'string' ? body.content.trim() : '';
+      const regenerate = Boolean(body.regenerate);
+      if (!Number.isInteger(index) || index < 0) return json(res, 400, { error: 'index must be a non-negative integer' });
+      if (!content) return json(res, 400, { error: 'content must be a non-empty string' });
+
+      const state = readState();
+      ensureActiveSession(state);
+      const session = state.sessions[state.activeSessionId];
+      const targetMsg = findEditableMessage(session, index);
+      if (!targetMsg) return json(res, 404, { error: 'Message not found' });
+
+      targetMsg.content = content;
+      if (targetMsg.role === 'assistant') {
+        if (!Array.isArray(targetMsg.alternatives) || !targetMsg.alternatives.length) {
+          targetMsg.alternatives = [content];
+          targetMsg.activeIndex = 0;
+        } else {
+          const aiIdx = Number.isInteger(targetMsg.activeIndex) ? targetMsg.activeIndex : 0;
+          targetMsg.activeIndex = aiIdx;
+          targetMsg.alternatives[aiIdx] = content;
+        }
+      }
+
+      let reply = null;
+      if (regenerate) {
+        if (targetMsg.role !== 'user') return json(res, 400, { error: 'regenerate only works for user messages' });
+        session.messages = session.messages.slice(0, index + 1);
+        const ai = getContextAiSettings(state, state.activeContext);
+        const promptSession = { ...session, messages: session.messages.slice(0, index), summaries: [...(session.summaries || [])] };
+        const promptMsgs = buildSessionPrompt(state, promptSession, ai, content);
+        const assistant = await chatCompletion(promptMsgs, ai);
+        reply = assistant.content || '';
+        session.messages.push({ role: 'assistant', content: reply, alternatives: [reply], activeIndex: 0 });
+        scheduleSessionMaintenance(state.activeContext, state.activeSessionId, ai, content, reply);
+      }
+
+      updateSessionMeta(session, content);
+      writeState(state);
+      return json(res, 200, { ok: true, reply, messages: session.messages });
     } catch (e) {
       return json(res, 500, { error: e.message });
     }
