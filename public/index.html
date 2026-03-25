@@ -455,10 +455,7 @@
         });
         const j = await r.json();
         if (j.error) { addMsg('[Edit error] ' + j.error, 'bot'); return; }
-        if (regenerate && j.reply) {
-          // Reload messages to show regenerated result
-          await loadMessages();
-        }
+        await loadMessages();
       } catch (e) {
         addMsg('[Edit error] ' + e.message, 'bot');
       }
@@ -556,7 +553,15 @@
       const r = await fetch('/api/messages');
       const j = await r.json();
       clearChat();
-      (j.messages || []).forEach((m, idx) => addMsg(m.content, m.role === 'user' ? 'me' : 'bot', { msgIndex: idx, charName: m.charName || null }));
+      Object.keys(swipeMap).forEach(k => delete swipeMap[k]);
+      (j.messages || []).forEach((m, idx) => {
+        if (m.role === 'assistant') {
+          const variants = Array.isArray(m.alternatives) && m.alternatives.length ? m.alternatives : [m.content || ''];
+          const current = Number.isInteger(m.activeIndex) ? m.activeIndex : 0;
+          swipeMap[idx] = { variants, current };
+        }
+        addMsg(m.content, m.role === 'user' ? 'me' : 'bot', { msgIndex: idx, charName: m.charName || null });
+      });
       if (!j.messages || j.messages.length === 0) {
         addMsg('Ready. Start chatting ✨', 'bot');
       }
@@ -1064,7 +1069,7 @@
             if (!raw || raw === '[DONE]') continue;
             try {
               const chunk = JSON.parse(raw);
-              if (chunk.reasoning) {
+              if (typeof chunk.reasoning === 'string') {
                 reasoningContent += chunk.reasoning;
               }
               if (chunk.token) {
@@ -1073,9 +1078,13 @@
                 window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
               }
               if (chunk.done) {
+                if (chunk.error) throw new Error(chunk.error);
                 if (chunk.content) {
                   fullContent = chunk.content;
                   botBubble.innerHTML = renderRoleplayText(fullContent);
+                }
+                if (chunk.reasoning && typeof chunk.reasoning.reasoningContent === 'string') {
+                  reasoningContent = chunk.reasoning.reasoningContent;
                 }
                 // Reasoning block
                 if (reasoningContent || (chunk.reasoning && chunk.reasoning.enabled)) {
@@ -1092,6 +1101,7 @@
                 } else {
                   reasoningStatusEl.textContent = 'Reasoning: OFF';
                 }
+                await loadSessions();
                 // Add swipe controls now that msg is final
                 const existingSwipe = botWrapper.querySelector('.swipe-controls');
                 if (!existingSwipe) {
