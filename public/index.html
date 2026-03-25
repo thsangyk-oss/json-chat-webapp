@@ -34,6 +34,8 @@
     .scene-beat{font-size:13px;color:#8ec5ff;opacity:.96;font-style:italic}
     .meta{color:var(--muted);font-size:12px;margin:4px 2px}
     .status-line{font-size:11px;color:#8f9bb0;opacity:.9;padding:2px 4px;min-height:16px;margin-bottom:72px}
+    .status-line.status-generating{color:#8ec5ff;animation:pulseStatus 1s ease-in-out infinite}
+    @keyframes pulseStatus{0%,100%{opacity:.45}50%{opacity:1}}
     .composer{position:fixed;left:0;right:0;bottom:0;background:linear-gradient(transparent,rgba(15,17,21,.9) 30%, rgba(15,17,21,1));padding:10px}
     .composer-inner{max-width:900px;margin:0 auto;display:flex;gap:8px}
     textarea{flex:1;min-height:48px;max-height:140px;resize:vertical}
@@ -360,6 +362,16 @@
     const reasoningStatusEl = $('reasoningStatus');
     let contextLabels = {};
 
+    function setGeneratingStatus(text = 'Status: generating...') {
+      reasoningStatusEl.textContent = text;
+      reasoningStatusEl.classList.add('status-generating');
+    }
+
+    function setIdleStatus(text = 'Status: ready') {
+      reasoningStatusEl.textContent = text;
+      reasoningStatusEl.classList.remove('status-generating');
+    }
+
     // ── Swipe state ──
     // Per-message swipe alternatives: swipeMap[msgIndex] = { variants:[], current:0 }
     const swipeMap = {};
@@ -541,6 +553,7 @@
 
     async function doEditMessage(index, content, regenerate) {
       try {
+        if (regenerate) setGeneratingStatus('Status: regenerating (from edited message)...');
         const r = await fetch('/api/edit-message', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -549,7 +562,9 @@
         const j = await r.json();
         if (j.error) { addMsg('[Edit error] ' + j.error, 'bot'); return; }
         await loadMessages();
+        if (regenerate) setIdleStatus('Regen done');
       } catch (e) {
+        setIdleStatus(`Edit/Regen error · ${e.message}`);
         addMsg('[Edit error] ' + e.message, 'bot');
       }
     }
@@ -557,6 +572,7 @@
     // Swipe function
     async function swipe(direction, msgIndex) {
       try {
+        if (direction === 'new') setGeneratingStatus('Status: regenerating...');
         const r = await fetch('/api/swipe', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -586,7 +602,12 @@
           const genInfoEl = swipeDiv.querySelector('.gen-info');
           if (genInfoEl) genInfoEl.textContent = formatGenInfo(j.genInfo || {});
         }
+        if (direction === 'new') {
+          const infoText = formatGenInfo(j.genInfo || {});
+          setIdleStatus(infoText ? `Regen done • ${infoText}` : 'Regen done');
+        }
       } catch (e) {
+        setIdleStatus(`Regen error · ${e.message}`);
         addMsg('[Swipe error] ' + e.message, 'bot');
       }
     }
@@ -642,7 +663,7 @@
         $('aiAuthorsNote').value = j.activeAi.authorsNote || '';
         $('aiNoteDepth').value = String(j.activeAi.authorsNoteDepth || 4);
         $('aiNoteDepthLabel').textContent = $('aiNoteDepth').value;
-        reasoningStatusEl.textContent = j.activeAi.reasoning === 'on' ? 'Reasoning: ON (waiting first response...)' : 'Reasoning: OFF';
+        setIdleStatus(j.activeAi.reasoning === 'on' ? 'Reasoning: ON (waiting first response...)' : 'Reasoning: OFF');
       }
       // Populate group members checkboxes
       renderGroupMembers(j.contexts || []);
@@ -1406,7 +1427,7 @@
       // Create assistant bubble with typing indicator
       const botMsgIndex = msgCount + 1;
       const { wrapper: botWrapper, bubble: botBubble } = addMsg('', 'bot', { msgIndex: botMsgIndex, isTyping: true });
-      reasoningStatusEl.textContent = 'Status: generating...';
+      setGeneratingStatus('Status: generating...');
 
       let fullContent = '';
       let reasoningContent = '';
@@ -1422,7 +1443,7 @@
           // Fallback to non-streaming
           const j = await r.json().catch(() => ({ error: 'Stream failed' }));
           botBubble.innerHTML = renderRoleplayText(j.reply || j.error || 'Error');
-          reasoningStatusEl.textContent = 'Status: done';
+          setIdleStatus('Status: done');
           await loadSessions();
           return;
         }
@@ -1474,9 +1495,9 @@
                 else if (info.enabled) statusParts.push(`Reasoning: hidden`);
 
                 if (statusParts.length > 0) {
-                  reasoningStatusEl.textContent = statusParts.join(' • ');
+                  setIdleStatus(statusParts.join(' • '));
                 } else {
-                  reasoningStatusEl.textContent = 'Reasoning: OFF';
+                  setIdleStatus('Reasoning: OFF');
                 }
 
                 if (reasoningContent) {
@@ -1509,7 +1530,7 @@
         }
       } catch (e) {
         botBubble.innerHTML = renderRoleplayText('[Network error] ' + e.message);
-        reasoningStatusEl.textContent = `Status: network error · ${e.message}`;
+        setIdleStatus(`Status: network error · ${e.message}`);
       }
     }
 
