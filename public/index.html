@@ -375,17 +375,29 @@
       return groupCharColors[name];
     }
 
-    function renderRoleplayText(text) {
-      const escaped = (text || '')
+    function escapeHtml(text) {
+      return String(text || '')
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;');
+    }
 
-      const withScene = escaped
-        .replace(/\*\*([^*]+)\*\*/g, '<span class="scene-beat">**$1**</span>')
-        .replace(/\*([^*]+)\*/g, '<span class="scene-beat">*$1*</span>');
+    function renderRoleplayText(text) {
+      const src = String(text || '');
+      const tokenRe = /(\*\*[^*\n]+\*\*|\*[^*\n]+\*)/g;
 
-      return withScene.replace(/\n/g, '<br>');
+      let out = '';
+      let last = 0;
+      let match;
+
+      while ((match = tokenRe.exec(src)) !== null) {
+        out += escapeHtml(src.slice(last, match.index));
+        out += `<span class="scene-beat">${escapeHtml(match[0])}</span>`;
+        last = tokenRe.lastIndex;
+      }
+
+      out += escapeHtml(src.slice(last));
+      return out.replace(/\n/g, '<br>');
     }
 
     // msgIndex = position in conversation (for edit API), charName optional for group
