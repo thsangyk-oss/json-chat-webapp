@@ -1,0 +1,1303 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JSON Context Chat</title>
+  <style>
+    :root { --bg:#0f1115; --card:#171a21; --muted:#9aa4b2; --text:#e8edf2; --accent:#4f8cff; --danger:#a93b3b; }
+    *{box-sizing:border-box}
+    html,body{overscroll-behavior-x:none;overscroll-behavior-y:none}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,Arial,sans-serif;touch-action:pan-y}
+    .wrap{max-width:900px;margin:0 auto;padding:10px}
+    .top{position:sticky;top:0;background:var(--bg);padding:8px 0;z-index:5}
+    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .banner{display:flex;align-items:center;justify-content:space-between;background:var(--card);border-radius:12px;padding:10px 12px;margin-bottom:8px}
+    .banner-title{font-weight:700;font-size:14px;letter-spacing:.2px}
+    .icon-btn{width:40px;height:40px;display:flex;align-items:center;justify-content:center;padding:0;border-radius:10px;font-size:18px;line-height:1}
+    .composer-icon-btn{width:48px;height:48px;display:flex;align-items:center;justify-content:center;padding:0;font-size:22px}
+    select,button,textarea,input{border:none;border-radius:12px;padding:10px 12px;font-size:14px}
+    select,textarea,input{background:var(--card);color:var(--text)}
+    button{background:var(--accent);color:white;font-weight:600}
+    button.secondary{background:#2a3040;color:#d5def0}
+    button.danger{background:var(--danger)}
+    #chat{display:flex;flex-direction:column;gap:8px;padding:10px 0 120px}
+    .msg{padding:10px 12px;border-radius:14px;max-width:86%;white-space:pre-wrap;line-height:1.4}
+    .me{align-self:flex-end;background:#2a457a}
+    .bot{align-self:flex-start;background:var(--card)}
+    .scene-beat{font-size:12px;color:#8ec5ff;opacity:.95}
+    .meta{color:var(--muted);font-size:12px;margin:4px 2px}
+    .status-line{font-size:11px;color:#8f9bb0;opacity:.9;padding:2px 4px;min-height:16px;margin-bottom:72px}
+    .composer{position:fixed;left:0;right:0;bottom:0;background:linear-gradient(transparent,rgba(15,17,21,.9) 30%, rgba(15,17,21,1));padding:10px}
+    .composer-inner{max-width:900px;margin:0 auto;display:flex;gap:8px}
+    textarea{flex:1;min-height:48px;max-height:140px;resize:vertical}
+    .panel{background:var(--card);border-radius:14px;padding:10px}
+    .hidden{display:none}
+    #settingsSheet{margin-bottom:8px}
+    .settings-grid{display:grid;grid-template-columns:1fr;gap:10px}
+    .settings-card{background:#141820;border:1px solid #252d3a;border-radius:12px;padding:0}
+    .settings-card summary{list-style:none;cursor:pointer;padding:12px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:700}
+    .settings-card summary::-webkit-details-marker{display:none}
+    .settings-card .content{padding:0 12px 12px;overflow-x:hidden;max-width:100%;box-sizing:border-box}
+    .stack{display:flex;flex-direction:column;gap:8px}
+    .actions{display:flex;gap:8px;flex-wrap:wrap}
+    #contextMainActions{flex-wrap:nowrap;overflow-x:auto}
+    #contextMainActions button{white-space:nowrap}
+    .lorebook-entry{background:#0f1320;border:1px solid #2b3444;border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px;overflow:hidden;min-width:0;flex-shrink:0}
+    .lorebook-entry .lbe-row{display:flex;gap:6px;align-items:center;min-width:0}
+    .lorebook-entry .lbe-kw{flex:1;min-width:0;height:32px}
+    .lorebook-entry .lbe-content{width:100%;min-height:60px;max-height:120px;resize:vertical;font-size:12px;box-sizing:border-box}
+    .lorebook-entry .lbe-del{background:var(--danger);padding:6px 10px;font-size:12px;border-radius:6px;flex-shrink:0}
+    .lorebook-entry .lbe-checks{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+    .lorebook-entry .lbe-checks label{display:flex;align-items:center;gap:4px;white-space:nowrap;font-size:12px}
+    .lorebook-entry input[type="text"],.lorebook-entry textarea{font-size:13px;padding:8px}
+    #lorebookEntries{max-height:50vh;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;gap:8px;padding-right:2px}
+    #lorebookEntries::-webkit-scrollbar{width:3px}
+    #lorebookEntries::-webkit-scrollbar-thumb{background:#3a4560;border-radius:3px}
+    @media (min-width:900px){
+      .settings-grid{grid-template-columns:1fr 1fr}
+      .settings-card.full{grid-column:1/-1;max-width:100%;overflow:hidden}
+    }
+    @media (max-width:600px){ .wrap{padding:8px} .msg{max-width:94%} }
+    /* Swipe controls */
+    .swipe-controls{display:flex;gap:6px;align-items:center;justify-content:center;padding:4px 0;font-size:12px;opacity:0.7}
+    .swipe-btn{background:none;border:1px solid #333;border-radius:6px;padding:4px 8px;color:#aaa;font-size:14px;cursor:pointer}
+    .swipe-btn:hover{background:#2a2a3e;color:#fff}
+    /* Edit message */
+    .msg-wrapper{display:flex;flex-direction:column;align-items:flex-start;max-width:86%}
+    .msg-wrapper.me-wrap{align-self:flex-end;align-items:flex-end}
+    .msg-edit-bar{display:none;gap:4px;margin-top:2px}
+    .msg-wrapper:hover .msg-edit-bar,.msg-wrapper.show-edit .msg-edit-bar{display:flex}
+    .msg-edit-icon{background:none;border:none;font-size:14px;cursor:pointer;padding:2px 4px;color:#9aa4b2;border-radius:6px}
+    .msg-edit-icon:hover{background:#2a3040}
+    .edit-area{width:100%;min-height:60px;resize:vertical;font-size:14px;padding:8px;border-radius:10px;background:#1e2233;color:var(--text);border:1px solid #3a4560}
+    .edit-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+    .edit-actions button{font-size:12px;padding:6px 10px;border-radius:8px}
+    /* Streaming typing indicator */
+    .typing-dots::after{content:'...';animation:dots 1.2s steps(3,end) infinite}
+    @keyframes dots{0%{content:'.'}33%{content:'..'}66%{content:'...'}}
+    /* Reasoning block */
+    .reasoning-block{font-size:12px;color:#8ec5ff;margin-top:6px}
+    .reasoning-block summary{cursor:pointer;opacity:0.7;font-style:italic}
+    .reasoning-block pre{white-space:pre-wrap;margin:4px 0;font-size:11px;color:#a8c0e0;max-height:200px;overflow-y:auto}
+    /* Group chat name label */
+    .char-label{font-size:11px;font-weight:700;margin-bottom:2px;padding:0 2px}
+    /* Prompt block */
+    .prompt-block{display:flex;gap:6px;align-items:center;padding:6px 8px;background:#0f1320;border-radius:8px;margin:3px 0}
+    .prompt-block label{flex:1;font-size:13px}
+    .prompt-block button{background:#2a3040;color:#d5def0;font-size:12px;padding:4px 8px;border-radius:6px;font-weight:400}
+    /* Add provider form */
+    #addProviderForm{display:none;flex-direction:column;gap:6px;margin-top:6px;padding:8px;background:#0f1320;border-radius:10px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div class="banner">
+        <div class="banner-title" id="botTitle">JSON Context Bot</div>
+        <button id="toggleSettingsBtn" class="secondary icon-btn" title="Settings" aria-label="Settings">⚙️</button>
+      </div>
+      <div id="settingsSheet" class="panel hidden">
+        <div class="settings-grid">
+          <details class="settings-card full" open>
+            <summary>Context</summary>
+            <div class="content stack">
+              <select id="contextSelect"></select>
+              <div class="actions">
+                <input id="contextLabel" placeholder="Bot name for this JSON (e.g. Tomoe)" style="flex:1;min-width:220px;" />
+              </div>
+              <div class="actions" id="contextMainActions">
+                <button id="saveLabelBtn" class="secondary">Save</button>
+                <button id="switchBtn">Switch</button>
+                <button id="newChatBtn" class="secondary">New chat</button>
+                <button id="resetBtn" class="secondary">Clear</button>
+              </div>
+
+              <div class="settings-card" style="padding:10px; border:1px solid #2b3444;">
+                <div class="settings-title" style="margin-bottom:6px;">AI tuning for this JSON bot</div>
+                <div class="stack">
+                  <label>Creativity</label>
+                  <select id="aiCreativity">
+                    <option value="low">Không (low)</option>
+                    <option value="balanced">Trung tính</option>
+                    <option value="creative">Sáng tạo</option>
+                    <option value="very_creative">Rất sáng tạo</option>
+                  </select>
+
+                  <label>Context behavior</label>
+                  <select id="aiContextMode">
+                    <option value="strict">Rất bám sát</option>
+                    <option value="balanced">Trung tính</option>
+                    <option value="develop">Tạo ngữ cảnh mới (phát triển từ hiện tại)</option>
+                    <option value="new">Sáng tạo ngữ cảnh</option>
+                  </select>
+
+                  <label>Context window</label>
+                  <select id="aiContextWindow">
+                    <option value="100k">100K token (thực tế: history cap lớn)</option>
+                    <option value="500_messages">500 câu chat gần nhất</option>
+                  </select>
+
+                  <label>Reasoning</label>
+                  <select id="aiReasoning">
+                    <option value="off">Không cho phép</option>
+                    <option value="on">Cho phép</option>
+                  </select>
+
+                  <label>Trả lời của AI</label>
+                  <select id="aiResponseLength">
+                    <option value="short">Ngắn</option>
+                    <option value="normal">Bình thường</option>
+                    <option value="long">Dài</option>
+                    <option value="detailed">Chi tiết</option>
+                    <option value="very_detailed">Rất chi tiết</option>
+                  </select>
+
+                  <label>Độ dài mục tiêu (50-500 chữ): <span id="aiTargetWordsLabel">180</span></label>
+                  <input id="aiTargetWords" type="range" min="50" max="500" step="10" value="180" />
+
+                  <label>Uncensored</label>
+                  <select id="aiNsfw">
+                    <option value="on">🔓 ON — No filter</option>
+                    <option value="off">🔒 OFF — Safe mode</option>
+                  </select>
+
+                  <label>Ngôn ngữ Memory/Lorebook</label>
+                  <select id="aiLanguage">
+                    <option value="vi">🇻🇳 Tiếng Việt</option>
+                    <option value="en">🇺🇸 English</option>
+                  </select>
+
+                  <label>Author's Note</label>
+                  <textarea id="aiAuthorsNote" rows="2" placeholder="Text injected at specified depth..."></textarea>
+                  <label>Depth: <span id="aiNoteDepthLabel">4</span></label>
+                  <input id="aiNoteDepth" type="range" min="1" max="20" value="4" />
+
+                  <div class="actions">
+                    <button id="saveAiBtn" class="secondary">Save AI tuning</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </details>
+
+          <details class="settings-card">
+            <summary>Chats</summary>
+            <div class="content stack">
+              <select id="sessionSelect"></select>
+              <div class="actions">
+                <button id="openSessionBtn" class="secondary">Open</button>
+                <button id="deleteSessionBtn" class="danger">Delete chat</button>
+              </div>
+            </div>
+          </details>
+
+          <details class="settings-card">
+            <summary>Upload JSON Context</summary>
+            <div class="content stack">
+              <div class="actions">
+                <input id="uploadName" placeholder="new-context.json" style="flex:1;min-width:140px;" />
+                <button id="pickFileBtn" class="secondary">Pick file</button>
+                <button id="toggleUploadBtn" class="secondary">Paste JSON</button>
+                <input id="uploadFile" type="file" accept=".json,application/json" class="hidden" />
+              </div>
+              <textarea id="uploadJson" class="hidden" placeholder="Paste JSON context here..."></textarea>
+              <div class="actions hidden" id="uploadActions">
+                <button id="uploadBtn">Save & Switch</button>
+                <button id="cancelUploadBtn" class="secondary">Cancel</button>
+              </div>
+            </div>
+          </details>
+
+          <details class="settings-card full">
+            <summary>Brain (Proxy API)</summary>
+            <div class="content stack">
+              <label>Provider</label>
+              <select id="brainProvider"></select>
+              <label>Model</label>
+              <select id="brainModel"></select>
+              <button id="addProviderBtn" class="secondary" style="font-size:12px">+ Add Provider</button>
+              <div id="addProviderForm">
+                <input id="newProvName" placeholder="Provider name" />
+                <input id="newProvUrl" placeholder="Base URL" />
+                <input id="newProvKey" placeholder="API Key" />
+                <input id="newProvModels" placeholder="model1, model2" />
+                <button id="saveNewProvBtn" class="secondary">Save Provider</button>
+              </div>
+              <input id="brainBaseUrl" placeholder="Base URL (e.g. https://.../v1)" />
+              <input id="brainApiKey" placeholder="API Key" />
+              <input id="brainActiveModel" placeholder="Active model (e.g. gpt-5.4-mini)" />
+              <textarea id="brainModels" placeholder="Model list, one per line"></textarea>
+              <div class="actions">
+                <button id="saveBrainBtn">Save brain</button>
+                <button id="reloadBrainBtn" class="secondary">Reload</button>
+              </div>
+            </div>
+          </details>
+
+          <details class="settings-card full">
+            <summary>Memory.md (per JSON bot)</summary>
+            <div class="content stack">
+              <textarea id="memoryEditor" placeholder="Memory for this JSON bot..." style="min-height:180px;"></textarea>
+              <div class="actions">
+                <button id="saveMemoryBtn" class="secondary">Save memory</button>
+                <button id="reloadMemoryBtn" class="secondary">Reload memory</button>
+                <button id="summarizeNowBtn" class="secondary">Summarize now</button>
+              </div>
+              <div id="conflictLine" class="meta">Conflicts: 0</div>
+            </div>
+          </details>
+
+          <details class="settings-card full">
+            <summary>Lorebook / World Info (<span id="lorebookCount">0</span> entries)</summary>
+            <div class="content stack">
+              <div id="lorebookEntries"></div>
+              <div class="actions">
+                <button id="addLorebookBtn" class="secondary">+ Add entry</button>
+                <button id="genLorebookBtn" class="secondary">Auto-generate from JSON</button>
+                <button id="saveLorebookBtn" class="secondary">Save</button>
+                <button id="reloadLorebookBtn" class="secondary">Reload</button>
+              </div>
+            </div>
+          </details>
+          <details class="settings-card full">
+            <summary>Group Chat</summary>
+            <div class="content stack">
+              <label>Group Name</label>
+              <input id="groupName" placeholder="my-group" />
+              <label>Members (select characters)</label>
+              <div id="groupMembers"></div>
+              <label>Talk Order</label>
+              <select id="groupTalkOrder">
+                <option value="round-robin">Round Robin</option>
+                <option value="ai-decides">AI Decides</option>
+              </select>
+              <div class="actions">
+                <button id="saveGroupBtn" class="secondary">Save Group</button>
+              </div>
+            </div>
+          </details>
+
+          <details class="settings-card full">
+            <summary>Prompt Manager</summary>
+            <div class="content stack">
+              <div id="promptBlocks"></div>
+              <div class="actions">
+                <button id="savePromptOrderBtn" class="secondary">Save Order</button>
+              </div>
+            </div>
+          </details>
+        </div>
+      </div>
+    </div>
+
+    <div id="chat"></div>
+    <div id="reasoningStatus" class="status-line">Status: ready</div>
+  </div>
+
+  <div class="composer">
+    <div class="composer-inner">
+      <textarea id="input" placeholder="Message"></textarea>
+      <button id="quickActionBtn" class="secondary composer-icon-btn" title="Add action" aria-label="Add action">＋</button>
+      <button id="sendBtn" class="composer-icon-btn" title="Send" aria-label="Send">➤</button>
+    </div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const chatEl = $('chat');
+    const inputEl = $('input');
+    const contextSelect = $('contextSelect');
+    const sessionSelect = $('sessionSelect');
+    const reasoningStatusEl = $('reasoningStatus');
+    let contextLabels = {};
+
+    // ── Swipe state ──
+    // Per-message swipe alternatives: swipeMap[msgIndex] = { variants:[], current:0 }
+    const swipeMap = {};
+
+    // ── Group chat state ──
+    let groupCharColors = {};
+    const CHAR_COLORS = ['#4f8cff','#ff7eb3','#7ed957','#ffb347','#c77dff','#00d2d3','#ff6b6b'];
+
+    function charColor(name) {
+      if (!groupCharColors[name]) {
+        const idx = Object.keys(groupCharColors).length % CHAR_COLORS.length;
+        groupCharColors[name] = CHAR_COLORS[idx];
+      }
+      return groupCharColors[name];
+    }
+
+    function renderRoleplayText(text) {
+      const escaped = (text || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
+      const withScene = escaped
+        .replace(/\*\*([^*]+)\*\*/g, '<span class="scene-beat">**$1**</span>')
+        .replace(/\*([^*]+)\*/g, '<span class="scene-beat">*$1*</span>');
+
+      return withScene.replace(/\n/g, '<br>');
+    }
+
+    // msgIndex = position in conversation (for edit API), charName optional for group
+    function addMsg(text, who='bot', { msgIndex = -1, charName = null, isTyping = false } = {}) {
+      // Wrapper div
+      const wrapper = document.createElement('div');
+      wrapper.className = `msg-wrapper${who === 'me' ? ' me-wrap' : ''}`;
+
+      // Character label (group mode)
+      if (charName) {
+        const lbl = document.createElement('div');
+        lbl.className = 'char-label';
+        lbl.style.color = charColor(charName);
+        lbl.textContent = charName;
+        wrapper.appendChild(lbl);
+      }
+
+      // Message bubble
+      const div = document.createElement('div');
+      div.className = `msg ${who === 'me' ? 'me' : 'bot'}`;
+      if (isTyping) {
+        div.innerHTML = '<span class="typing-dots"></span>';
+      } else {
+        div.innerHTML = renderRoleplayText(text);
+      }
+      wrapper.appendChild(div);
+
+      // Edit bar (✏️ button)
+      const editBar = document.createElement('div');
+      editBar.className = 'msg-edit-bar';
+      const editIcon = document.createElement('button');
+      editIcon.className = 'msg-edit-icon';
+      editIcon.textContent = '✏️';
+      editIcon.title = 'Edit message';
+      editIcon.onclick = () => startEditMessage(wrapper, div, text, msgIndex, who);
+      editBar.appendChild(editIcon);
+      wrapper.appendChild(editBar);
+
+      // Tap to toggle edit bar on mobile
+      div.addEventListener('click', () => wrapper.classList.toggle('show-edit'));
+
+      // Swipe controls (only for bot messages)
+      if (who === 'bot' && !isTyping && msgIndex >= 0) {
+        const sw = swipeMap[msgIndex];
+        const total = sw ? sw.variants.length : 1;
+        const current = sw ? sw.current + 1 : 1;
+        const swipeDiv = document.createElement('div');
+        swipeDiv.className = 'swipe-controls';
+        swipeDiv.dataset.msgIndex = msgIndex;
+        swipeDiv.innerHTML = `
+          <button class="swipe-btn" onclick="swipe('prev',${msgIndex})">◀</button>
+          <span class="swipe-counter">${current}/${total}</span>
+          <button class="swipe-btn" onclick="swipe('next',${msgIndex})">▶</button>
+          <button class="swipe-btn" onclick="swipe('new',${msgIndex})">🔄</button>
+        `;
+        wrapper.appendChild(swipeDiv);
+      }
+
+      chatEl.appendChild(wrapper);
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+      return { wrapper, bubble: div };
+    }
+
+    function startEditMessage(wrapper, bubble, originalText, msgIndex, who) {
+      wrapper.classList.remove('show-edit');
+      // Replace bubble content with textarea
+      bubble.style.display = 'none';
+      const ta = document.createElement('textarea');
+      ta.className = 'edit-area';
+      ta.value = originalText;
+      const actions = document.createElement('div');
+      actions.className = 'edit-actions';
+      const saveBtn = document.createElement('button');
+      saveBtn.className = 'secondary';
+      saveBtn.textContent = 'Save';
+      const regenBtn = document.createElement('button');
+      regenBtn.textContent = 'Save & Regen ▶';
+      const cancelBtn = document.createElement('button');
+      cancelBtn.className = 'secondary';
+      cancelBtn.textContent = 'Cancel';
+
+      saveBtn.onclick = async () => {
+        const newContent = ta.value.trim();
+        await doEditMessage(msgIndex, newContent, false);
+        bubble.innerHTML = renderRoleplayText(newContent);
+        bubble.style.display = '';
+        ta.remove(); actions.remove();
+      };
+      regenBtn.onclick = async () => {
+        const newContent = ta.value.trim();
+        bubble.style.display = '';
+        ta.remove(); actions.remove();
+        await doEditMessage(msgIndex, newContent, true);
+      };
+      cancelBtn.onclick = () => {
+        bubble.style.display = '';
+        ta.remove(); actions.remove();
+      };
+
+      actions.appendChild(saveBtn);
+      actions.appendChild(regenBtn);
+      actions.appendChild(cancelBtn);
+      wrapper.insertBefore(ta, bubble.nextSibling);
+      wrapper.insertBefore(actions, ta.nextSibling);
+      ta.focus();
+    }
+
+    async function doEditMessage(index, content, regenerate) {
+      try {
+        const r = await fetch('/api/edit-message', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ index, content, regenerate })
+        });
+        const j = await r.json();
+        if (j.error) { addMsg('[Edit error] ' + j.error, 'bot'); return; }
+        if (regenerate && j.reply) {
+          // Reload messages to show regenerated result
+          await loadMessages();
+        }
+      } catch (e) {
+        addMsg('[Edit error] ' + e.message, 'bot');
+      }
+    }
+
+    // Swipe function
+    async function swipe(direction, msgIndex) {
+      try {
+        const r = await fetch('/api/swipe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ direction, msgIndex })
+        });
+        const j = await r.json();
+        if (j.error) { addMsg('[Swipe error] ' + j.error, 'bot'); return; }
+
+        // Update swipeMap
+        if (!swipeMap[msgIndex]) swipeMap[msgIndex] = { variants: [], current: 0 };
+        if (j.variants) swipeMap[msgIndex].variants = j.variants;
+        if (typeof j.current === 'number') swipeMap[msgIndex].current = j.current;
+
+        // Find the wrapper and update bubble + counter
+        const swipeDiv = chatEl.querySelector(`.swipe-controls[data-msg-index="${msgIndex}"]`);
+        if (swipeDiv) {
+          const wrapper = swipeDiv.closest('.msg-wrapper');
+          if (wrapper) {
+            const bubble = wrapper.querySelector('.msg.bot');
+            if (bubble && j.content) bubble.innerHTML = renderRoleplayText(j.content);
+          }
+          const counter = swipeDiv.querySelector('.swipe-counter');
+          if (counter) {
+            const total = swipeMap[msgIndex].variants.length || 1;
+            counter.textContent = `${swipeMap[msgIndex].current + 1}/${total}`;
+          }
+        }
+      } catch (e) {
+        addMsg('[Swipe error] ' + e.message, 'bot');
+      }
+    }
+
+    function clearChat() {
+      chatEl.innerHTML = '';
+    }
+
+    async function loadContexts() {
+      const r = await fetch('/api/contexts');
+      const j = await r.json();
+      contextLabels = j.labels || {};
+      contextSelect.innerHTML = '';
+      j.contexts.forEach(c => {
+        const op = document.createElement('option');
+        op.value = c;
+        const label = contextLabels[c] || c;
+        op.textContent = `${label} (${c})`;
+        if (c === j.active) op.selected = true;
+        contextSelect.appendChild(op);
+      });
+      $('contextLabel').value = contextLabels[j.active] || '';
+      if (j.activeAi) {
+        $('aiCreativity').value = j.activeAi.creativity || 'balanced';
+        $('aiContextMode').value = j.activeAi.contextMode || 'balanced';
+        $('aiContextWindow').value = j.activeAi.contextWindowMode || '100k';
+        $('aiReasoning').value = j.activeAi.reasoning || 'off';
+        $('aiResponseLength').value = j.activeAi.responseLength || 'normal';
+        $('aiTargetWords').value = String(j.activeAi.targetWords || 180);
+        $('aiTargetWordsLabel').textContent = $('aiTargetWords').value;
+        $('aiNsfw').value = j.activeAi.nsfw === false ? 'off' : 'on';
+        $('aiLanguage').value = j.activeAi.language || 'vi';
+        $('aiAuthorsNote').value = j.activeAi.authorsNote || '';
+        $('aiNoteDepth').value = String(j.activeAi.authorsNoteDepth || 4);
+        $('aiNoteDepthLabel').textContent = $('aiNoteDepth').value;
+        reasoningStatusEl.textContent = j.activeAi.reasoning === 'on' ? 'Reasoning: ON (waiting first response...)' : 'Reasoning: OFF';
+      }
+      // Populate group members checkboxes
+      renderGroupMembers(j.contexts || []);
+    }
+
+    async function loadSessions() {
+      const r = await fetch('/api/sessions');
+      const j = await r.json();
+      sessionSelect.innerHTML = '';
+      j.sessions.forEach(s => {
+        const op = document.createElement('option');
+        op.value = s.id;
+        op.textContent = `${s.title || 'Chat'} · ${new Date(s.updatedAt).toLocaleString()}`;
+        if (s.id === j.activeSessionId) op.selected = true;
+        sessionSelect.appendChild(op);
+      });
+      const showName = contextLabels[j.activeContext] || j.activeContext;
+      $('botTitle').textContent = showName;
+      $('contextLabel').value = contextLabels[j.activeContext] || '';
+    }
+
+    async function loadMessages() {
+      const r = await fetch('/api/messages');
+      const j = await r.json();
+      clearChat();
+      (j.messages || []).forEach((m, idx) => addMsg(m.content, m.role === 'user' ? 'me' : 'bot', { msgIndex: idx, charName: m.charName || null }));
+      if (!j.messages || j.messages.length === 0) {
+        addMsg('Ready. Start chatting ✨', 'bot');
+      }
+    }
+
+    async function loadBrain() {
+      const r = await fetch('/api/brain');
+      const j = await r.json();
+      if (j.error) return;
+      $('brainBaseUrl').value = j.baseUrl || '';
+      $('brainApiKey').value = j.apiKey || '';
+      $('brainActiveModel').value = j.activeModel || '';
+      $('brainModels').value = (j.models || []).join('\n');
+    }
+
+    async function loadAiSettingsFor(contextName) {
+      if (!contextName) return;
+      const r = await fetch(`/api/context-ai?context=${encodeURIComponent(contextName)}`);
+      const j = await r.json();
+      if (j.error) return;
+      $('aiCreativity').value = j.ai.creativity || 'balanced';
+      $('aiContextMode').value = j.ai.contextMode || 'balanced';
+      $('aiContextWindow').value = j.ai.contextWindowMode || '100k';
+      $('aiReasoning').value = j.ai.reasoning || 'off';
+      $('aiResponseLength').value = j.ai.responseLength || 'normal';
+      $('aiTargetWords').value = String(j.ai.targetWords || 180);
+      $('aiTargetWordsLabel').textContent = $('aiTargetWords').value;
+      $('aiNsfw').value = j.ai.nsfw === false ? 'off' : 'on';
+      $('aiLanguage').value = j.ai.language || 'vi';
+      $('aiAuthorsNote').value = j.ai.authorsNote || '';
+      $('aiNoteDepth').value = String(j.ai.authorsNoteDepth || 4);
+      $('aiNoteDepthLabel').textContent = $('aiNoteDepth').value;
+    }
+
+    async function saveAiSettings() {
+      const context = contextSelect.value;
+      const ai = {
+        creativity: $('aiCreativity').value,
+        contextMode: $('aiContextMode').value,
+        contextWindowMode: $('aiContextWindow').value,
+        reasoning: $('aiReasoning').value,
+        responseLength: $('aiResponseLength').value,
+        targetWords: Number($('aiTargetWords').value || 180),
+        nsfw: $('aiNsfw').value !== 'off',
+        language: $('aiLanguage').value,
+        authorsNote: $('aiAuthorsNote').value,
+        authorsNoteDepth: Number($('aiNoteDepth').value || 4),
+      };
+      const r = await fetch('/api/context-ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ context, ai })
+      });
+      const j = await r.json();
+      if (j.error) return alert(j.error);
+      addMsg('AI tuning saved ✅', 'bot');
+    }
+
+    async function loadMemory(contextName) {
+      if (!contextName) return;
+      const r = await fetch(`/api/memory?context=${encodeURIComponent(contextName)}`);
+      const j = await r.json();
+      if (j.error) return;
+      $('memoryEditor').value = j.content || '';
+    }
+
+    async function saveMemory() {
+      const context = contextSelect.value;
+      const content = $('memoryEditor').value;
+      const r = await fetch('/api/memory', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ context, content })
+      });
+      const j = await r.json();
+      if (j.error) return alert(j.error);
+      addMsg('Memory saved ✅', 'bot');
+    }
+
+    async function summarizeNow() {
+      const context = contextSelect.value;
+      const r = await fetch('/api/memory/summarize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ context })
+      });
+      const j = await r.json();
+      if (j.error) return alert(j.error);
+      await loadMemory(context);
+      await loadConflicts(context);
+      addMsg('Summary refreshed ✅', 'bot');
+    }
+
+    async function loadConflicts(contextName) {
+      if (!contextName) return;
+      const r = await fetch(`/api/memory/conflicts?context=${encodeURIComponent(contextName)}`);
+      const j = await r.json();
+      if (j.error) return;
+      const n = (j.items || []).length;
+      $('conflictLine').textContent = n ? `Conflicts: ${n} (latest: ${j.items[0].type})` : 'Conflicts: 0';
+    }
+
+    async function saveBrain() {
+      const baseUrl = $('brainBaseUrl').value.trim();
+      const apiKey = $('brainApiKey').value.trim();
+      const activeModel = $('brainActiveModel').value.trim();
+      const models = $('brainModels').value.split('\n').map(x => x.trim()).filter(Boolean);
+
+      const r = await fetch('/api/brain', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ baseUrl, apiKey, activeModel, models })
+      });
+      const j = await r.json();
+      if (j.error) return alert(j.error);
+      addMsg('Brain updated ✅', 'bot');
+      await loadBrain();
+    }
+
+    // ── Lorebook UI ──
+    let lorebookData = [];
+
+    function renderLorebookEntries() {
+      const container = $('lorebookEntries');
+      $('lorebookCount').textContent = lorebookData.length;
+      container.innerHTML = '';
+      if (!lorebookData.length) {
+        container.innerHTML = '<div class="meta">No entries yet. Click "+ Add entry" or "Auto-generate".</div>';
+        return;
+      }
+      lorebookData.forEach((entry, idx) => {
+        const div = document.createElement('div');
+        div.className = 'lorebook-entry';
+        div.innerHTML = `
+          <div class="lbe-row">
+            <input class="lbe-kw" data-idx="${idx}" data-field="keywords" value="${(entry.keywords||[]).join(', ')}" placeholder="keywords..." />
+            <button class="lbe-del" data-idx="${idx}">✕</button>
+          </div>
+          <textarea class="lbe-content" data-idx="${idx}" data-field="content" placeholder="Description...">${entry.content||''}</textarea>
+          <div class="lbe-checks">
+            <label><input type="checkbox" data-idx="${idx}" data-field="enabled" ${entry.enabled!==false?'checked':''} style="width:auto"> On</label>
+            <label><input type="checkbox" data-idx="${idx}" data-field="constant" ${entry.constant?'checked':''} style="width:auto"> Always</label>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+
+      // Events
+      container.querySelectorAll('input[data-field="keywords"]').forEach(el => {
+        el.addEventListener('input', e => {
+          const idx = +e.target.dataset.idx;
+          lorebookData[idx].keywords = e.target.value.split(',').map(s=>s.trim()).filter(Boolean);
+        });
+      });
+      container.querySelectorAll('textarea[data-field="content"]').forEach(el => {
+        el.addEventListener('input', e => {
+          const idx = +e.target.dataset.idx;
+          lorebookData[idx].content = e.target.value;
+        });
+      });
+      container.querySelectorAll('input[data-field="enabled"]').forEach(el => {
+        el.addEventListener('change', e => {
+          const idx = +e.target.dataset.idx;
+          lorebookData[idx].enabled = e.target.checked;
+        });
+      });
+      container.querySelectorAll('input[data-field="constant"]').forEach(el => {
+        el.addEventListener('change', e => {
+          const idx = +e.target.dataset.idx;
+          lorebookData[idx].constant = e.target.checked;
+        });
+      });
+      container.querySelectorAll('.lbe-del').forEach(el => {
+        el.addEventListener('click', e => {
+          const idx = +e.target.dataset.idx;
+          lorebookData.splice(idx, 1);
+          renderLorebookEntries();
+        });
+      });
+    }
+
+    async function loadLorebook(contextName) {
+      if (!contextName) return;
+      try {
+        const r = await fetch(`/api/lorebook?context=${encodeURIComponent(contextName)}`);
+        const j = await r.json();
+        if (j.error) return;
+        lorebookData = j.entries || [];
+        renderLorebookEntries();
+      } catch {}
+    }
+
+    async function saveLorebook() {
+      const context = contextSelect.value;
+      const r = await fetch('/api/lorebook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ context, entries: lorebookData })
+      });
+      const j = await r.json();
+      if (j.error) return alert(j.error);
+      addMsg(`Lorebook saved: ${j.count} entries ✅`, 'bot');
+    }
+
+    async function generateLorebook() {
+      const context = contextSelect.value;
+      addMsg('Generating lorebook from JSON card... ⏳', 'bot');
+      try {
+        const r = await fetch('/api/lorebook/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ context })
+        });
+        const j = await r.json();
+        if (j.error) return addMsg(`Lorebook generate error: ${j.error}`, 'bot');
+        lorebookData = j.entries || [];
+        renderLorebookEntries();
+        addMsg(`Lorebook auto-generated: ${j.count} entries ✅`, 'bot');
+      } catch (e) {
+        addMsg(`Lorebook generate failed: ${e.message}`, 'bot');
+      }
+    }
+
+    // ── Group Chat ──
+    function renderGroupMembers(contexts) {
+      const container = $('groupMembers');
+      if (!container) return;
+      container.innerHTML = '';
+      contexts.forEach(c => {
+        const label = document.createElement('label');
+        label.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:13px;padding:4px 0';
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.value = c;
+        cb.name = 'groupMember';
+        cb.style.width = 'auto';
+        label.appendChild(cb);
+        label.appendChild(document.createTextNode(contextLabels[c] || c));
+        container.appendChild(label);
+      });
+    }
+
+    async function saveGroupSettings() {
+      const groupName = $('groupName').value.trim();
+      const talkOrder = $('groupTalkOrder').value;
+      const members = Array.from(document.querySelectorAll('input[name="groupMember"]:checked')).map(cb => cb.value);
+      const r = await fetch('/api/group-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ groupName, members, talkOrder })
+      });
+      const j = await r.json();
+      if (j.error) return alert(j.error);
+      addMsg(`Group "${groupName}" saved ✅`, 'bot');
+    }
+
+    // ── Prompt Manager ──
+    let promptOrderData = [];
+
+    function renderPromptBlocks() {
+      const container = $('promptBlocks');
+      if (!container) return;
+      container.innerHTML = '';
+      promptOrderData.forEach((block, idx) => {
+        const div = document.createElement('div');
+        div.className = 'prompt-block';
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = block.enabled !== false;
+        cb.style.width = 'auto';
+        cb.onchange = () => { promptOrderData[idx].enabled = cb.checked; };
+        const lbl = document.createElement('label');
+        lbl.style.flex = '1';
+        lbl.textContent = block.name || block.type || `Block ${idx+1}`;
+        const upBtn = document.createElement('button');
+        upBtn.textContent = '▲';
+        upBtn.onclick = () => {
+          if (idx === 0) return;
+          [promptOrderData[idx-1], promptOrderData[idx]] = [promptOrderData[idx], promptOrderData[idx-1]];
+          renderPromptBlocks();
+        };
+        const downBtn = document.createElement('button');
+        downBtn.textContent = '▼';
+        downBtn.onclick = () => {
+          if (idx === promptOrderData.length - 1) return;
+          [promptOrderData[idx+1], promptOrderData[idx]] = [promptOrderData[idx], promptOrderData[idx+1]];
+          renderPromptBlocks();
+        };
+        div.appendChild(cb);
+        div.appendChild(lbl);
+        div.appendChild(upBtn);
+        div.appendChild(downBtn);
+        container.appendChild(div);
+      });
+    }
+
+    async function loadPromptOrder() {
+      try {
+        const r = await fetch('/api/prompt-order');
+        const j = await r.json();
+        if (j.error) return;
+        promptOrderData = j.blocks || [];
+        renderPromptBlocks();
+      } catch {}
+    }
+
+    async function savePromptOrder() {
+      const r = await fetch('/api/prompt-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ blocks: promptOrderData })
+      });
+      const j = await r.json();
+      if (j.error) return alert(j.error);
+      addMsg('Prompt order saved ✅', 'bot');
+    }
+
+    // ── Multi-API / Providers ──
+    let providersData = [];
+
+    async function loadProviders() {
+      try {
+        const r = await fetch('/api/providers');
+        const j = await r.json();
+        if (j.error) return;
+        providersData = j.providers || [];
+        const provSel = $('brainProvider');
+        const modelSel = $('brainModel');
+        provSel.innerHTML = '';
+        providersData.forEach((p, idx) => {
+          const op = document.createElement('option');
+          op.value = idx;
+          op.textContent = p.name || p.baseUrl || `Provider ${idx+1}`;
+          if (p.active) op.selected = true;
+          provSel.appendChild(op);
+        });
+        updateModelDropdown();
+      } catch {}
+    }
+
+    function updateModelDropdown() {
+      const modelSel = $('brainModel');
+      if (!modelSel) return;
+      const idx = +($('brainProvider').value || 0);
+      const prov = providersData[idx];
+      modelSel.innerHTML = '';
+      if (prov && prov.models) {
+        prov.models.forEach(m => {
+          const op = document.createElement('option');
+          op.value = m;
+          op.textContent = m;
+          if (m === prov.activeModel) op.selected = true;
+          modelSel.appendChild(op);
+        });
+      }
+    }
+
+    async function switchProvider() {
+      const idx = +($('brainProvider').value || 0);
+      const model = $('brainModel').value;
+      const prov = providersData[idx];
+      if (!prov) return;
+      try {
+        const r = await fetch('/api/provider', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ providerIndex: idx, model })
+        });
+        const j = await r.json();
+        if (j.error) return alert(j.error);
+        addMsg(`Provider switched to ${prov.name || prov.baseUrl}, model: ${model} ✅`, 'bot');
+      } catch (e) {
+        addMsg('[Provider error] ' + e.message, 'bot');
+      }
+    }
+
+    async function saveNewProvider() {
+      const name = $('newProvName').value.trim();
+      const baseUrl = $('newProvUrl').value.trim();
+      const apiKey = $('newProvKey').value.trim();
+      const models = $('newProvModels').value.split(',').map(s => s.trim()).filter(Boolean);
+      if (!name || !baseUrl) return alert('Provider name and Base URL required');
+      try {
+        const r = await fetch('/api/providers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, baseUrl, apiKey, models })
+        });
+        const j = await r.json();
+        if (j.error) return alert(j.error);
+        $('newProvName').value = '';
+        $('newProvUrl').value = '';
+        $('newProvKey').value = '';
+        $('newProvModels').value = '';
+        $('addProviderForm').style.display = 'none';
+        await loadProviders();
+        addMsg(`Provider "${name}" added ✅`, 'bot');
+      } catch (e) {
+        addMsg('[Provider error] ' + e.message, 'bot');
+      }
+    }
+
+    $('addLorebookBtn').onclick = () => {
+      lorebookData.push({ id: Date.now(), keywords: [], content: '', enabled: true, priority: 5, constant: false });
+      renderLorebookEntries();
+    };
+    $('genLorebookBtn').onclick = generateLorebook;
+    $('saveLorebookBtn').onclick = saveLorebook;
+    $('reloadLorebookBtn').onclick = () => loadLorebook(contextSelect.value);
+
+    // Group Chat
+    $('saveGroupBtn').onclick = saveGroupSettings;
+
+    // Prompt Manager
+    $('savePromptOrderBtn').onclick = savePromptOrder;
+
+    // Multi-API
+    $('addProviderBtn').onclick = () => {
+      const form = $('addProviderForm');
+      form.style.display = form.style.display === 'none' ? 'flex' : 'none';
+    };
+    $('saveNewProvBtn').onclick = saveNewProvider;
+    $('brainProvider').onchange = () => { updateModelDropdown(); switchProvider(); };
+    $('brainModel').onchange = switchProvider;
+
+    // Author's Note depth label
+    $('aiNoteDepth').oninput = () => { $('aiNoteDepthLabel').textContent = $('aiNoteDepth').value; };
+
+    async function reloadAll() {
+      await loadContexts();
+      await loadSessions();
+      await loadMessages();
+      await loadBrain();
+      await loadMemory(contextSelect.value);
+      await loadConflicts(contextSelect.value);
+      await loadLorebook(contextSelect.value);
+      await loadProviders();
+      await loadPromptOrder();
+    }
+
+    async function switchContext() {
+      const name = contextSelect.value;
+      const r = await fetch('/api/context', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+      });
+      const j = await r.json();
+      if (j.error) return alert(j.error);
+      await loadSessions();
+      await loadMessages();
+      await loadAiSettingsFor(name);
+      await loadMemory(name);
+      await loadConflicts(name);
+      await loadLorebook(name);
+    }
+
+    async function send() {
+      const msg = inputEl.value.trim();
+      if (!msg) return;
+      inputEl.value = '';
+      // Get current message count for index
+      const msgCount = chatEl.querySelectorAll('.msg-wrapper').length;
+      addMsg(msg, 'me', { msgIndex: msgCount });
+
+      // Create assistant bubble with typing indicator
+      const botMsgIndex = msgCount + 1;
+      const { wrapper: botWrapper, bubble: botBubble } = addMsg('', 'bot', { msgIndex: botMsgIndex, isTyping: true });
+      reasoningStatusEl.textContent = 'Status: generating...';
+
+      let fullContent = '';
+      let reasoningContent = '';
+
+      try {
+        const r = await fetch('/api/chat-stream', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: msg })
+        });
+
+        if (!r.ok || !r.body) {
+          // Fallback to non-streaming
+          const j = await r.json().catch(() => ({ error: 'Stream failed' }));
+          botBubble.innerHTML = renderRoleplayText(j.reply || j.error || 'Error');
+          reasoningStatusEl.textContent = 'Status: done';
+          await loadSessions();
+          return;
+        }
+
+        const reader = r.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        botBubble.innerHTML = ''; // clear typing dots
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop(); // keep incomplete line
+
+          for (const line of lines) {
+            if (!line.startsWith('data:')) continue;
+            const raw = line.slice(5).trim();
+            if (!raw || raw === '[DONE]') continue;
+            try {
+              const chunk = JSON.parse(raw);
+              if (chunk.reasoning) {
+                reasoningContent += chunk.reasoning;
+              }
+              if (chunk.token) {
+                fullContent += chunk.token;
+                botBubble.innerHTML = renderRoleplayText(fullContent);
+                window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+              }
+              if (chunk.done) {
+                if (chunk.content) {
+                  fullContent = chunk.content;
+                  botBubble.innerHTML = renderRoleplayText(fullContent);
+                }
+                // Reasoning block
+                if (reasoningContent || (chunk.reasoning && chunk.reasoning.enabled)) {
+                  const rt = chunk.reasoning && chunk.reasoning.reasoningTokens || 0;
+                  reasoningStatusEl.textContent = rt > 0
+                    ? `Reasoning: ✅ active · tokens ${rt}`
+                    : `Reasoning: ⚠ requested but hidden`;
+                  if (reasoningContent) {
+                    const details = document.createElement('details');
+                    details.className = 'reasoning-block';
+                    details.innerHTML = `<summary>Reasoning (${rt} tokens)</summary><pre>${reasoningContent.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre>`;
+                    botWrapper.insertBefore(details, botBubble.nextSibling);
+                  }
+                } else {
+                  reasoningStatusEl.textContent = 'Reasoning: OFF';
+                }
+                // Add swipe controls now that msg is final
+                const existingSwipe = botWrapper.querySelector('.swipe-controls');
+                if (!existingSwipe) {
+                  const swipeDiv = document.createElement('div');
+                  swipeDiv.className = 'swipe-controls';
+                  swipeDiv.dataset.msgIndex = botMsgIndex;
+                  swipeDiv.innerHTML = `
+                    <button class="swipe-btn" onclick="swipe('prev',${botMsgIndex})">◀</button>
+                    <span class="swipe-counter">1/1</span>
+                    <button class="swipe-btn" onclick="swipe('next',${botMsgIndex})">▶</button>
+                    <button class="swipe-btn" onclick="swipe('new',${botMsgIndex})">🔄</button>
+                  `;
+                  botWrapper.appendChild(swipeDiv);
+                }
+                await loadSessions();
+              }
+            } catch (_) {}
+          }
+        }
+      } catch (e) {
+        botBubble.innerHTML = renderRoleplayText('[Network error] ' + e.message);
+        reasoningStatusEl.textContent = `Status: network error · ${e.message}`;
+      }
+    }
+
+    async function newChat() {
+      const title = prompt('Chat title (optional):') || 'New chat';
+      const r = await fetch('/api/sessions/new', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title })
+      });
+      const j = await r.json();
+      if (j.error) return alert(j.error);
+      await loadSessions();
+      await loadMessages();
+    }
+
+    async function openSession() {
+      const sessionId = sessionSelect.value;
+      const r = await fetch('/api/sessions/select', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId })
+      });
+      const j = await r.json();
+      if (j.error) return alert(j.error);
+      await loadSessions();
+      await loadMessages();
+    }
+
+    async function deleteSession() {
+      const sessionId = sessionSelect.value;
+      if (!sessionId) return;
+      if (!confirm('Delete this chat?')) return;
+      const r = await fetch('/api/sessions/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId })
+      });
+      const j = await r.json();
+      if (j.error) return alert(j.error);
+      await loadSessions();
+      await loadMessages();
+    }
+
+    async function resetCurrent() {
+      if (!confirm('Clear messages of current chat?')) return;
+      await fetch('/api/reset', { method: 'POST' });
+      await loadMessages();
+      await loadSessions();
+    }
+
+    function toggleUpload(show) {
+      $('uploadJson').classList.toggle('hidden', !show);
+      $('uploadActions').classList.toggle('hidden', !show);
+    }
+
+    async function uploadContext() {
+      const name = $('uploadName').value.trim() || `context_${Date.now()}.json`;
+      const jsonText = $('uploadJson').value.trim();
+      if (!jsonText) return alert('Paste JSON first');
+
+      const r = await fetch('/api/upload-context', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, jsonText })
+      });
+      const j = await r.json();
+      if (j.error) return alert(j.error);
+
+      $('uploadJson').value = '';
+      toggleUpload(false);
+      await reloadAll();
+      addMsg(`Context uploaded & switched: ${j.name}`, 'bot');
+    }
+
+    function insertAtCursor(el, text) {
+      const start = el.selectionStart ?? el.value.length;
+      const end = el.selectionEnd ?? el.value.length;
+      const val = el.value;
+      el.value = val.slice(0, start) + text + val.slice(end);
+      const pos = start + text.length;
+      el.focus();
+      el.setSelectionRange(pos, pos);
+    }
+
+    $('sendBtn').onclick = send;
+    $('quickActionBtn').onclick = () => {
+      const template = ' **hành động**';
+      insertAtCursor(inputEl, template);
+      // place cursor inside the action text for quick edit
+      const cursor = inputEl.value.lastIndexOf('hành động');
+      if (cursor >= 0) inputEl.setSelectionRange(cursor, cursor + 'hành động'.length);
+    };
+
+    $('switchBtn').onclick = switchContext;
+    $('newChatBtn').onclick = newChat;
+    $('openSessionBtn').onclick = openSession;
+    $('deleteSessionBtn').onclick = deleteSession;
+    $('resetBtn').onclick = resetCurrent;
+
+    $('saveLabelBtn').onclick = async () => {
+      const name = contextSelect.value;
+      const label = $('contextLabel').value.trim();
+      await fetch('/api/context-label', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, label })
+      });
+      await loadContexts();
+      await loadSessions();
+    };
+
+    contextSelect.onchange = async () => {
+      $('contextLabel').value = contextLabels[contextSelect.value] || '';
+      await loadAiSettingsFor(contextSelect.value);
+      await loadMemory(contextSelect.value);
+      await loadConflicts(contextSelect.value);
+      await loadLorebook(contextSelect.value);
+    };
+
+    $('toggleSettingsBtn').onclick = () => {
+      $('settingsSheet').classList.toggle('hidden');
+    };
+
+    $('toggleUploadBtn').onclick = () => toggleUpload($('uploadJson').classList.contains('hidden'));
+    $('cancelUploadBtn').onclick = () => toggleUpload(false);
+    $('uploadBtn').onclick = uploadContext;
+
+    $('pickFileBtn').onclick = () => $('uploadFile').click();
+    $('uploadFile').onchange = async (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const text = await file.text();
+      $('uploadJson').value = text;
+      if (!$('uploadName').value.trim()) $('uploadName').value = file.name || `context_${Date.now()}.json`;
+      toggleUpload(true);
+    };
+
+    $('saveBrainBtn').onclick = saveBrain;
+    $('reloadBrainBtn').onclick = loadBrain;
+    $('saveAiBtn').onclick = saveAiSettings;
+    $('aiTargetWords').oninput = () => { $('aiTargetWordsLabel').textContent = $('aiTargetWords').value; };
+    $('saveMemoryBtn').onclick = saveMemory;
+    $('reloadMemoryBtn').onclick = () => loadMemory(contextSelect.value);
+    $('summarizeNowBtn').onclick = summarizeNow;
+
+    inputEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        send();
+      }
+    });
+
+    // Best-effort block pull-to-refresh / edge-swipe back inside app
+    let startX = 0, startY = 0;
+    document.addEventListener('touchstart', (e) => {
+      const t = e.touches && e.touches[0];
+      if (!t) return;
+      startX = t.clientX;
+      startY = t.clientY;
+    }, { passive: true });
+
+    document.addEventListener('touchmove', (e) => {
+      const t = e.touches && e.touches[0];
+      if (!t) return;
+      const dx = t.clientX - startX;
+      const dy = t.clientY - startY;
+      const fromLeftEdge = startX < 20;
+      const fromRightEdge = startX > (window.innerWidth - 20);
+
+      // block iOS/Android edge swipe navigation gestures
+      if ((fromLeftEdge && dx > 8) || (fromRightEdge && dx < -8)) {
+        e.preventDefault();
+        return;
+      }
+
+      // block pull-to-refresh at top
+      const atTop = (window.scrollY || document.documentElement.scrollTop || 0) <= 0;
+      if (atTop && dy > 8) {
+        e.preventDefault();
+      }
+    }, { passive: false });
+
+    reloadAll();
+  </script>
+</body>
+</html>

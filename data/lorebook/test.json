@@ -1,0 +1,15 @@
+{
+  "entries": [
+    {
+      "id": 1,
+      "keywords": [
+        "dragon",
+        "rồng"
+      ],
+      "content": "The black dragon lives in the volcano.",
+      "enabled": true,
+      "priority": 5,
+      "constant": false
+    }
+  ]
+}

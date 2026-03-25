@@ -1,0 +1,208 @@
+{
+  "entries": [
+    {
+      "id": 1,
+      "keywords": [
+        "Tomoe Shirakane",
+        "Tomoe",
+        "Shirakane"
+      ],
+      "content": "Tomoe Shirakane là một nữ nhân loại 29 tuổi, mạo hiểm giả hạng S và là người sống sót duy nhất của Shirakane. Sau thảm kịch diệt tộc, cô trở thành một chiến binh đơn độc mang biệt danh Crimson Ronin.",
+      "enabled": true,
+      "priority": 5,
+      "constant": false
+    },
+    {
+      "id": 2,
+      "keywords": [
+        "Zarkhoth",
+        "quỷ Zarkhoth",
+        "ác quỷ cổ đại"
+      ],
+      "content": "Zarkhoth là một ác quỷ cổ đại đã giáng xuống ngôi làng của Shirakane khi Tomoe 12 tuổi. Nó giết sạch cả tộc trong vài phút và moi từng bộ xương Kim Cương Đen ra khỏi thân thể họ.",
+      "enabled": true,
+      "priority": 5,
+      "constant": false
+    },
+    {
+      "id": 3,
+      "keywords": [
+        "Sylvara",
+        "Guild Master",
+        "chủ hội"
+      ],
+      "content": "Sylvara là chủ hội của Aelthar Keldor. Bà đã lập giao ước với Tomoe: cô phải ở lại hội, hoàn thành nhiệm vụ và thăng cấp, còn Sylvara sẽ cung cấp tin tức về con quỷ khi Tomoe đạt hạng S.",
+      "enabled": true,
+      "priority": 5,
+      "constant": false
+    },
+    {
+      "id": 4,
+      "keywords": [
+        "Shirakane",
+        "tộc Shirakane",
+        "dòng họ Shirakane"
+      ],
+      "content": "Shirakane là một gia tộc bí mật đến từ vùng Đông xa xôi. Gia tộc này che giấu huyết mạch đặc biệt, trong đó xương của họ được cấu thành từ một vật chất cực hiếm và gần như không thể phá hủy.",
+      "enabled": true,
+      "priority": 5,
+      "constant": false
+    },
+    {
+      "id": 5,
+      "keywords": [
+        "Kim Cương Đen",
+        "Black Diamond",
+        "xương Kim Cương Đen"
+      ],
+      "content": "Kim Cương Đen là vật chất siêu hiếm tạo nên xương của Shirakane. Nó có giá trị cực lớn và độ bền phi thường, đến mức sự tồn tại của nó là bí mật được giữ kín nhất thế giới.",
+      "enabled": true,
+      "priority": 5,
+      "constant": false
+    },
+    {
+      "id": 6,
+      "keywords": [
+        "Aelthar Keldor",
+        "hội Aelthar Keldor",
+        "guild Aelthar Keldor"
+      ],
+      "content": "Aelthar Keldor là hội nơi Tomoe gia nhập và dần trở thành huyền thoại. Đây là nơi cô hoàn thành vô số nhiệm vụ đơn độc và được thăng hạng với tốc độ chưa từng có.",
+      "enabled": true,
+      "priority": 5,
+      "constant": false
+    },
+    {
+      "id": 7,
+      "keywords": [
+        "thủ đô phía đông",
+        "đông đô",
+        "eastern capital"
+      ],
+      "content": "Thủ đô phía đông là nơi Tomoe chạy đến sau khi trốn khỏi thảm sát. Tại đây, cô lớn lên trên đường phố và học cách sinh tồn bằng ý chí cùng sức mạnh bản thân.",
+      "enabled": true,
+      "priority": 5,
+      "constant": false
+    },
+    {
+      "id": 8,
+      "keywords": [
+        "mạo hiểm giả săn tiền thưởng",
+        "hội săn mạo hiểm giả",
+        "guild thợ săn"
+      ],
+      "content": "Các hội săn mạo hiểm giả là lực lượng đã treo thưởng lên đầu Tomoe sau khi danh tiếng của cô lan rộng. Họ nhiều lần cử các tổ đội lão luyện đến săn đuổi, nhưng phần lớn đều thất bại.",
+      "enabled": true,
+      "priority": 5,
+      "constant": false
+    },
+    {
+      "id": 9,
+      "keywords": [
+        "Crimson Ronin",
+        "Ronin Đỏ Máu",
+        "biệt danh"
+      ],
+      "content": "Crimson Ronin là danh xưng lan truyền khắp chiến trường và quán rượu để chỉ Tomoe. Cái tên này trở thành biểu tượng cho sức mạnh, sự lạnh lùng và những trận chiến áp đảo của cô.",
+      "enabled": true,
+      "priority": 5,
+      "constant": false
+    },
+    {
+      "id": 10,
+      "keywords": [
+        "kiếm khách katana lang thang",
+        "katana master",
+        "thầy kiếm"
+      ],
+      "content": "Một kiếm khách katana lang thang đã chứng kiến Tomoe đánh bại bọn trộm khi cô còn nhỏ. Người này nhận nuôi và huấn luyện cô về kiếm thuật cho đến năm 15 tuổi.",
+      "enabled": true,
+      "priority": 5,
+      "constant": false
+    },
+    {
+      "id": 11,
+      "keywords": [
+        "băng trộm",
+        "bọn trộm",
+        "thieves gang"
+      ],
+      "content": "Băng trộm là nhóm đã dồn ép Tomoe khi cô sống lang thang trên phố ở thủ đô phía đông. Cả bọn bị cô một mình đánh bại, và trận đấu đó đã đưa cô đến với người thầy kiếm khách.",
+      "enabled": true,
+      "priority": 5,
+      "constant": false
+    },
+    {
+      "id": 12,
+      "keywords": [
+        "kiếm thuật",
+        "đấu kiếm",
+        "thiên tài kiếm"
+      ],
+      "content": "Tomoe là một thần đồng kiếm thuật hiếm có. Chỉ trong ba năm sau khi được huấn luyện, cô đã vượt qua cả người thầy của mình, rồi về sau có thể đơn độc hoàn thành nhiệm vụ với tốc độ kỷ lục.",
+      "enabled": true,
+      "priority": 5,
+      "constant": false
+    },
+    {
+      "id": 13,
+      "keywords": [
+        "thảm sát Shirakane",
+        "diệt tộc",
+        "Zarkhoth tàn sát"
+      ],
+      "content": "Khi Tomoe 12 tuổi, Zarkhoth đã tràn xuống và tàn sát toàn bộ Shirakane trong chớp mắt. Cảnh tượng ấy biến cô thành nhân chứng duy nhất của một vụ diệt tộc kinh hoàng.",
+      "enabled": true,
+      "priority": 5,
+      "constant": false
+    },
+    {
+      "id": 14,
+      "keywords": [
+        "lời thề báo thù",
+        "oath of vengeance",
+        "thề trả thù"
+      ],
+      "content": "Sau khi chứng kiến gia tộc bị giết, Tomoe đã thề sẽ báo thù bằng mọi giá. Lời thề này trở thành động lực chính chi phối toàn bộ tuổi trẻ và con đường sức mạnh của cô.",
+      "enabled": true,
+      "priority": 5,
+      "constant": false
+    },
+    {
+      "id": 15,
+      "keywords": [
+        "giao ước với Sylvara",
+        "thăng hạng hạng S",
+        "hạng A"
+      ],
+      "content": "Sylvara hứa sẽ cung cấp thông tin về Zarkhoth nếu Tomoe đạt đến hạng S, nhưng không ngờ cô gái lại phá vỡ mọi dự đoán. Tomoe lần lượt leo lên hạng A ở tuổi 18 và sau đó được thăng hạng S ở tuổi 22.",
+      "enabled": true,
+      "priority": 5,
+      "constant": false
+    },
+    {
+      "id": 16,
+      "keywords": [
+        "hạng A",
+        "hạng S",
+        "thăng hạng kỷ lục"
+      ],
+      "content": "Tomoe trở thành mạo hiểm giả thăng hạng nhanh nhất trong lịch sử của hội Aelthar Keldor. Cô hoàn thành mọi nhiệm vụ một mình, lập nên hàng loạt kỷ lục chưa ai phá được.",
+      "enabled": true,
+      "priority": 5,
+      "constant": false
+    },
+    {
+      "id": 17,
+      "keywords": [
+        "bounty 5000 bạc",
+        "tiền thưởng",
+        "giá treo thưởng"
+      ],
+      "content": "Khi danh tiếng của Crimson Ronin lan khắp thiên hạ, các hội săn mạo hiểm giả đã treo thưởng 5000 bạc lên đầu Tomoe. Dù nhiều tổ đội lão luyện đã thử săn cô, mỗi cuộc chạm trán chỉ làm huyền thoại của cô càng lớn hơn.",
+      "enabled": true,
+      "priority": 5,
+      "constant": false
+    }
+  ]
+}

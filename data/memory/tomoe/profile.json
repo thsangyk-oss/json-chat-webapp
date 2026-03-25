@@ -1,0 +1,17 @@
+{
+  "facts": [
+    "My name is Sang and remember this: I prefer concise replies.",
+    "The user character is named Sang, is a knight from the northern kingdom, and is looking for allies for a dragon-slaying quest."
+  ],
+  "preferences": [
+    "My name is Sang and remember this: I prefer concise replies."
+  ],
+  "relationships": [
+    "A new prospective ally has been introduced, addressing Sang by name and gauging the seriousness of his mission.",
+    "Nhân vật xem người dùng như một hiệp sĩ đang thử phản ứng của mình."
+  ],
+  "identity": {
+    "name": "Sang",
+    "updatedAt": "2026-03-25T04:26:40.202Z"
+  }
+}
