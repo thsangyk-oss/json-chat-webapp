@@ -7,7 +7,7 @@ const url = require('url');
 const PORT = 8877;
 const HOST = '0.0.0.0';
 
-const BASE = '/root/.openclaw/workspace/json-chat-webapp';
+const BASE = __dirname;
 const PUBLIC_DIR = path.join(BASE, 'public');
 const CONTEXTS_DIR = path.join(BASE, 'contexts');
 const DATA_DIR = path.join(BASE, 'data');
