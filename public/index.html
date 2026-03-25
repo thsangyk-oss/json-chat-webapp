@@ -67,9 +67,10 @@
     }
     @media (max-width:600px){ .wrap{padding:8px} .msg{max-width:94%} }
     /* Swipe controls */
-    .swipe-controls{display:flex;gap:6px;align-items:center;justify-content:center;padding:4px 0;font-size:12px;opacity:0.7}
+    .swipe-controls{display:flex;gap:6px;align-items:center;justify-content:center;padding:4px 0;font-size:12px;opacity:0.85;flex-wrap:wrap}
     .swipe-btn{background:none;border:1px solid #333;border-radius:6px;padding:4px 8px;color:#aaa;font-size:14px;cursor:pointer}
     .swipe-btn:hover{background:#2a2a3e;color:#fff}
+    .gen-info{font-size:11px;color:#8f9bb0;opacity:.95;margin-left:4px}
     /* Edit message */
     .msg-wrapper{display:flex;flex-direction:column;align-items:flex-start;max-width:86%}
     .msg-wrapper.me-wrap{align-self:flex-end;align-items:flex-end}
@@ -404,8 +405,21 @@
       return out.replace(/\n/g, '<br>');
     }
 
+    function shortModelName(model) {
+      if (!model) return '';
+      const s = String(model);
+      return s.includes('/') ? s.split('/').pop() : s;
+    }
+
+    function formatGenInfo(info = {}) {
+      const parts = [];
+      if (info.model) parts.push(shortModelName(info.model));
+      if (Number(info.totalTokens) > 0) parts.push(`${info.totalTokens} tok`);
+      return parts.join(' · ');
+    }
+
     // msgIndex = position in conversation (for edit API), charName optional for group
-    function addMsg(text, who='bot', { msgIndex = -1, charName = null, isTyping = false, noSave = false } = {}) {
+    function addMsg(text, who='bot', { msgIndex = -1, charName = null, isTyping = false, noSave = false, genInfo = null } = {}) {
       // Wrapper div
       const wrapper = document.createElement('div');
       wrapper.className = `msg-wrapper${who === 'me' ? ' me-wrap' : ''}`;
@@ -445,6 +459,7 @@
           <button class="swipe-btn" onclick="swipe('next',${msgIndex})">▶</button>
           <button class="swipe-btn" onclick="swipe('new',${msgIndex})">🔄</button>
           <button class="swipe-btn" onclick="editMsg(${msgIndex}, 'bot')">✏️</button>
+          <span class="gen-info" id="genInfo-${msgIndex}">${formatGenInfo(genInfo || {})}</span>
         `;
         wrapper.appendChild(swipeDiv);
       } else if (!isTyping && msgIndex >= 0 && !noSave) {
@@ -568,6 +583,8 @@
             const total = swipeMap[msgIndex].variants.length || 1;
             counter.textContent = `${swipeMap[msgIndex].current + 1}/${total}`;
           }
+          const genInfoEl = swipeDiv.querySelector('.gen-info');
+          if (genInfoEl) genInfoEl.textContent = formatGenInfo(j.genInfo || {});
         }
       } catch (e) {
         addMsg('[Swipe error] ' + e.message, 'bot');
@@ -658,7 +675,7 @@
           const current = Number.isInteger(m.activeIndex) ? m.activeIndex : 0;
           swipeMap[idx] = { variants, current };
         }
-        addMsg(m.content, m.role === 'user' ? 'me' : 'bot', { msgIndex: idx, charName: m.charName || null });
+        addMsg(m.content, m.role === 'user' ? 'me' : 'bot', { msgIndex: idx, charName: m.charName || null, genInfo: m.genInfo || null });
       });
       if (!j.messages || j.messages.length === 0) {
         addMsg('Ready. Start chatting ✨', 'bot');
@@ -1480,6 +1497,8 @@
                     <span class="swipe-counter">1/1</span>
                     <button class="swipe-btn" onclick="swipe('next',${botMsgIndex})">▶</button>
                     <button class="swipe-btn" onclick="swipe('new',${botMsgIndex})">🔄</button>
+                    <button class="swipe-btn" onclick="editMsg(${botMsgIndex}, 'bot')">✏️</button>
+                    <span class="gen-info" id="genInfo-${botMsgIndex}">${formatGenInfo(info)}</span>
                   `;
                   botWrapper.appendChild(swipeDiv);
                 }

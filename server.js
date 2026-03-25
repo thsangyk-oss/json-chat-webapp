@@ -621,6 +621,14 @@ function normalizeMessageContent(msg) {
   return msg.content || '';
 }
 
+function buildGenInfo(meta = {}) {
+  return {
+    model: meta.model || '',
+    totalTokens: Number(meta.totalTokens || 0) || 0,
+    reasoningTokens: Number(meta.reasoningTokens || 0) || 0,
+  };
+}
+
 function cloneMessagesForPrompt(messages) {
   return (messages || []).map(m => ({ role: m.role, content: normalizeMessageContent(m) }));
 }
@@ -1582,8 +1590,13 @@ async function regenerateAssistantReply(state, session, assistantIndex) {
     assistantMsg.alternatives = [assistantMsg.content || ''];
   }
   assistantMsg.alternatives.push(newReply);
+  if (!Array.isArray(assistantMsg.alternativesMeta)) {
+    assistantMsg.alternativesMeta = new Array(assistantMsg.alternatives.length - 1).fill({ model: '', totalTokens: 0, reasoningTokens: 0 });
+  }
+  assistantMsg.alternativesMeta.push(buildGenInfo(assistant));
   assistantMsg.activeIndex = assistantMsg.alternatives.length - 1;
   assistantMsg.content = newReply;
+  assistantMsg.genInfo = buildGenInfo(assistant);
   updateSessionMeta(session, userText);
 
   return { reply: newReply, reasoning: assistant };
@@ -2245,7 +2258,11 @@ Rules:
 
       const assistant = await chatCompletionStream(msgs, ai, res);
       const assistantText = assistant.content || '';
-      session.messages.push({ role: 'user', content: userText }, { role: 'assistant', content: assistantText, alternatives: [assistantText], activeIndex: 0 });
+      const genInfo = buildGenInfo(assistant);
+      session.messages.push(
+        { role: 'user', content: userText },
+        { role: 'assistant', content: assistantText, alternatives: [assistantText], alternativesMeta: [genInfo], activeIndex: 0, genInfo }
+      );
       updateSessionMeta(session, userText);
       writeState(state);
       scheduleSessionMaintenance(state.activeContext, state.activeSessionId, ai, userText, assistantText);
@@ -2288,7 +2305,11 @@ Rules:
 
       const assistant = await chatCompletion(msgs, ai);
       const assistantText = assistant.content;
-      session.messages.push({ role: 'user', content: userText }, { role: 'assistant', content: assistantText, alternatives: [assistantText], activeIndex: 0 });
+      const genInfo = buildGenInfo(assistant);
+      session.messages.push(
+        { role: 'user', content: userText },
+        { role: 'assistant', content: assistantText, alternatives: [assistantText], alternativesMeta: [genInfo], activeIndex: 0, genInfo }
+      );
       updateSessionMeta(session, userText);
       writeState(state);
       scheduleSessionMaintenance(state.activeContext, state.activeSessionId, ai, userText, assistantText);
@@ -2325,6 +2346,7 @@ Rules:
       if (!msg) return json(res, 404, { error: 'Assistant message not found' });
 
       if (!Array.isArray(msg.alternatives) || !msg.alternatives.length) msg.alternatives = [msg.content || ''];
+      if (!Array.isArray(msg.alternativesMeta)) msg.alternativesMeta = msg.alternatives.map(() => (msg.genInfo || { model: '', totalTokens: 0, reasoningTokens: 0 }));
       if (!Number.isInteger(msg.activeIndex)) msg.activeIndex = 0;
 
       if (direction === 'next') {
@@ -2338,9 +2360,11 @@ Rules:
         msg.content = out.reply;
       }
 
+      msg.genInfo = msg.alternativesMeta[msg.activeIndex] || msg.genInfo || { model: '', totalTokens: 0, reasoningTokens: 0 };
+
       updateSessionMeta(session, '');
       writeState(state);
-      return json(res, 200, { ok: true, msgIndex, content: msg.content, current: msg.activeIndex, total: msg.alternatives.length, variants: msg.alternatives });
+      return json(res, 200, { ok: true, msgIndex, content: msg.content, current: msg.activeIndex, total: msg.alternatives.length, variants: msg.alternatives, genInfo: msg.genInfo });
     } catch (e) {
       return json(res, 500, { error: e.message });
     }
@@ -2382,7 +2406,8 @@ Rules:
         const promptMsgs = buildSessionPrompt(state, promptSession, ai, content);
         const assistant = await chatCompletion(promptMsgs, ai);
         reply = assistant.content || '';
-        session.messages.push({ role: 'assistant', content: reply, alternatives: [reply], activeIndex: 0 });
+        const genInfo = buildGenInfo(assistant);
+        session.messages.push({ role: 'assistant', content: reply, alternatives: [reply], alternativesMeta: [genInfo], activeIndex: 0, genInfo });
         scheduleSessionMaintenance(state.activeContext, state.activeSessionId, ai, content, reply);
       }
 
