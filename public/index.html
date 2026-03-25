@@ -73,10 +73,9 @@
     /* Edit message */
     .msg-wrapper{display:flex;flex-direction:column;align-items:flex-start;max-width:86%}
     .msg-wrapper.me-wrap{align-self:flex-end;align-items:flex-end}
-    .msg-edit-bar{display:none;gap:4px;margin-top:2px}
-    .msg-wrapper:hover .msg-edit-bar,.msg-wrapper.show-edit .msg-edit-bar{display:flex}
-    .msg-edit-icon{background:none;border:none;font-size:14px;cursor:pointer;padding:2px 4px;color:#9aa4b2;border-radius:6px}
-    .msg-edit-icon:hover{background:#2a3040}
+    .msg-edit-bar{display:flex;gap:4px;margin-top:4px}
+    .msg-edit-icon{background:#2a3040;border:1px solid #3a4560;font-size:12px;cursor:pointer;padding:4px 8px;color:#d5def0;border-radius:6px}
+    .msg-edit-icon:hover{background:#36425c}
     .edit-area{width:100%;min-height:60px;resize:vertical;font-size:14px;padding:8px;border-radius:10px;background:#1e2233;color:var(--text);border:1px solid #3a4560}
     .edit-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
     .edit-actions button{font-size:12px;padding:6px 10px;border-radius:8px}
@@ -431,19 +430,6 @@
       }
       wrapper.appendChild(div);
 
-      // Edit bar (✏️ button)
-      const editBar = document.createElement('div');
-      editBar.className = 'msg-edit-bar';
-      const editIcon = document.createElement('button');
-      editIcon.className = 'msg-edit-icon';
-      editIcon.textContent = '✏️';
-      editIcon.title = 'Edit message';
-      editIcon.onclick = () => startEditMessage(wrapper, div, text, msgIndex, who);
-      editBar.appendChild(editIcon);
-      wrapper.appendChild(editBar);
-
-      // Tap to toggle edit bar on mobile
-      div.addEventListener('click', () => wrapper.classList.toggle('show-edit'));
 
       // Swipe controls (only for bot messages, ignore noSave messages)
       if (who === 'bot' && !isTyping && msgIndex >= 0 && !noSave) {
@@ -458,13 +444,40 @@
           <span class="swipe-counter">${current}/${total}</span>
           <button class="swipe-btn" onclick="swipe('next',${msgIndex})">▶</button>
           <button class="swipe-btn" onclick="swipe('new',${msgIndex})">🔄</button>
+          <button class="swipe-btn" onclick="editMsg(${msgIndex}, 'bot')">✏️</button>
         `;
         wrapper.appendChild(swipeDiv);
+      } else if (!isTyping && msgIndex >= 0 && !noSave) {
+        // User/system message: keep one always-visible edit button
+        const editBar = document.createElement('div');
+        editBar.className = 'msg-edit-bar';
+        editBar.innerHTML = `<button class="msg-edit-icon" onclick="editMsg(${msgIndex}, '${who}')">✏️ Edit</button>`;
+        wrapper.appendChild(editBar);
       }
 
       chatEl.appendChild(wrapper);
       window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
       return { wrapper, bubble: div };
+    }
+
+    function editMsg(msgIndex, who = 'bot') {
+      const swipeDiv = chatEl.querySelector(`.swipe-controls[data-msg-index="${msgIndex}"]`);
+      let wrapper = swipeDiv ? swipeDiv.closest('.msg-wrapper') : null;
+
+      if (!wrapper) {
+        // fallback for non-bot messages
+        const all = Array.from(chatEl.querySelectorAll('.msg-wrapper'));
+        wrapper = all.find(w => {
+          const btn = w.querySelector(`.msg-edit-icon[onclick*="editMsg(${msgIndex}"]`);
+          return Boolean(btn);
+        }) || null;
+      }
+      if (!wrapper) return;
+
+      const bubble = wrapper.querySelector(who === 'me' ? '.msg.me' : '.msg.bot') || wrapper.querySelector('.msg');
+      if (!bubble) return;
+      const plain = bubble.textContent || '';
+      startEditMessage(wrapper, bubble, plain, msgIndex, who);
     }
 
     function startEditMessage(wrapper, bubble, originalText, msgIndex, who) {
