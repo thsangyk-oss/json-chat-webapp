@@ -1,6 +1,6 @@
 {
-  "activeContext": "main_your-exes-are-dating-each-other-42a4d2bdc475_spec_v2.json",
-  "activeSessionId": "s_1774416343630_593",
+  "activeContext": "tomoe.json",
+  "activeSessionId": "s_1774439833316_382",
   "sessions": {
     "s_1774401164113_479": {
       "id": "s_1774401164113_479",
@@ -38,53 +38,359 @@
       "messages": [
         {
           "role": "user",
-          "content": "Chào, em tên gì"
+          "content": "smoke edited user message"
         },
         {
           "role": "assistant",
-          "content": "*Ở quán cà phê trong khuôn viên trường, cô gái cao hơn với tóc đen wolf cut tựa vai vào ghế, nhếch môi cười kiểu khiêu khích; cô gái tóc hồng ngồi cạnh, tay ôm cốc trà, nhìn bạn một cách dè dặt nhưng lịch sự.*\n\n**Alexandra**: “Yo, chào. Anh/chị cứ gọi tôi là **Alexandra**—Alex cũng được, bro.” *cô nhấc cằm, ánh mắt xanh liếc bạn từ trên xuống như đang đánh giá vui vui.*"
+          "content": "*Alexandra’s chair scrapes hard against the café floor as she catches your wrist mid-reach, yanking your hand back before it can land. Her green eyes go cold behind those round glasses, jaw tight, black-painted lips curling in a sharp, pissed-off grin.* “Whoa, dude. What the fuck do you think you’re doing? Hands off. Seriously.” *She shifts in front of Evelyn like a shield, broad shoulders squared, all joking gone now.* “You don’t get to touch her just because you feel like it. Back up.”\n\n*Evelyn flinches, pink hair slipping over her shoulder as she presses closer to Alexandra’s side, fingers clutching her cardigan.* “Please… don’t do that again,” *she says softly, but there’s a tremor in it now, her blue eyes fixed on you with clear unease.* *Alexandra doesn’t look away from you for a second.* “Yeah. So here’s the deal, bro. You wanna keep breathing normal and not get kicked out of here, you’re gonna sit the fuck down and stop trying to be creepy.",
+          "alternatives": [
+            "*Alexandra’s chair scrapes hard against the café floor as she catches your wrist mid-reach, yanking your hand back before it can land. Her green eyes go cold behind those round glasses, jaw tight, black-painted lips curling in a sharp, pissed-off grin.* “Whoa, dude. What the fuck do you think you’re doing? Hands off. Seriously.” *She shifts in front of Evelyn like a shield, broad shoulders squared, all joking gone now.* “You don’t get to touch her just because you feel like it. Back up.”\n\n*Evelyn flinches, pink hair slipping over her shoulder as she presses closer to Alexandra’s side, fingers clutching her cardigan.* “Please… don’t do that again,” *she says softly, but there’s a tremor in it now, her blue eyes fixed on you with clear unease.* *Alexandra doesn’t look away from you for a second.* “Yeah. So here’s the deal, bro. You wanna keep breathing normal and not get kicked out of here, you’re gonna sit the fuck down and stop trying to be creepy."
+          ],
+          "activeIndex": 0
         },
         {
           "role": "user",
-          "content": "Ừm cho anh hỏi em tên gì"
+          "content": "Hi"
         },
         {
           "role": "assistant",
-          "content": "*Alexandra bật cười khẽ, gõ ngón tay lên mặt bàn như kiểu “hỏi lại luôn à?” rồi nghiêng người về phía bạn, mùi hương hoa thoảng qua. Cô ấy nhướng mày, môi đen cong lên đầy trêu chọc.*\n\n**Alexandra**: “Dude… nãy tôi nói rồi mà.” *cô chỉ ngón cái vào ngực mình, khoe mấy chiếc nhẫn bạc lấp lánh* “**Alexandra**. Alex. Gọi sao cũng được—miễn đừng gọi sai là được, hiểu chưa?” *cô liếc sang cô gái tóc hồng rồi cười nửa miệng* “Còn nếu anh đang hỏi *em kia*—thì hỏi lịch sự chút đi.”\n\n*Evelyn ôm cốc trà chặt hơn, má ửng hồng. Cô ấy ngước lên, ánh mắt xanh dịu dàng nhưng hơi cảnh giác, rồi khẽ gật đầu như tự trấn an mình trước khi trả lời.*\n\n**Evelyn**: “Vâng… em tên là **Evelyn**.” *giọng nhỏ nhẹ, rõ ràng* “Anh cứ gọi em là Eve cũng được ạ. Rất vui được gặp anh.” *cô liếc Alexandra một cái rất nhanh, rồi nhìn lại bạn, cố mỉm cười cho tự nhiên.*"
+          "content": "*Alexandra keeps one arm angled protectively in front of Evelyn, eyes still locked on you like she’s daring you to try something stupid. Evelyn stays close at her shoulder, quiet and tense, fingers fidgeting with the edge of her sleeve.*  \n\n“Hi,” *Alexandra says flatly, not smiling. Then she snorts.* “Wow. Groundbreaking opener, dude. So, what do you actually want?” *She tilts her head, black choker catching the café light.* “If you’re here to talk, talk. If you’re here to act weird again, save us both the hassle and walk away.”  \n\n*Evelyn’s voice is softer, careful, but not unkind.* “Um… hello. Please just be clear with us, okay? We’d appreciate that.” *Her blue eyes flick briefly toward you, then back down, shy but steady.* “I think we’re both listening.”",
+          "alternatives": [
+            "*Alexandra keeps herself between you and Evelyn, one hand still half-raised like she’s ready to catch your bullshit again. The café noise hums around the three of you, but the table feels tight as hell.* “Hi? Bro, you really got the balls to go casual after that?” *She lets out a dry laugh, more annoyed than amused.* “Say what you actually want. And keep your hands to yourself this time.”\n\n*Evelyn stays tucked close to Alexandra’s side, shoulders drawn in, but her expression softens just a little once she sees you aren’t moving.* “Hello,” *she says quietly, polite but careful, eyes flicking down before returning to you.* “Um… if you’re here to talk, please do. Just… respectfully, if that’s all right.” *Alexandra snorts under her breath and taps two fingers against the table.* “Yeah, respectfully. Crazy concept, I know.” *Her green eyes narrow at you, protective and blunt.* “So. Talk, or leave her alone.”",
+            "*Alexandra doesn’t unclench right away. She keeps herself half in front of Evelyn, one hand on the table like she’s ready to move if you pull anything stupid. Her stare flicks over you, unimpressed.* “Hi. That all you got, man?” *She lets out a short huff, more annoyed than amused.* “If you’re actually here for something, say it. If not, don’t waste our time.”\n\n*Evelyn stays close to Alexandra’s shoulder, quiet and guarded, though she gives you a small, polite look anyway.* “Hello,” *she says softly.* “I think… it would be best if you were clear about what you want, please.” *Her fingers tighten around her cup, but her voice stays calm, careful.*\n\n*Alexandra tilts her head, black bangs brushing her glasses, expression flat but sharp.* “Yeah. That. No weird games, no creeping around. Just say it straight, dude.”",
+            "*Alexandra keeps one arm angled protectively in front of Evelyn, eyes still locked on you like she’s daring you to try something stupid. Evelyn stays close at her shoulder, quiet and tense, fingers fidgeting with the edge of her sleeve.*  \n\n“Hi,” *Alexandra says flatly, not smiling. Then she snorts.* “Wow. Groundbreaking opener, dude. So, what do you actually want?” *She tilts her head, black choker catching the café light.* “If you’re here to talk, talk. If you’re here to act weird again, save us both the hassle and walk away.”  \n\n*Evelyn’s voice is softer, careful, but not unkind.* “Um… hello. Please just be clear with us, okay? We’d appreciate that.” *Her blue eyes flick briefly toward you, then back down, shy but steady.* “I think we’re both listening.”"
+          ],
+          "activeIndex": 2
         },
         {
           "role": "user",
-          "content": "Model"
+          "content": "Em đang làm gì đó"
         },
         {
           "role": "assistant",
-          "content": "*Alexandra nheo mắt, rồi phá lên cười kiểu “what?” như bạn vừa hỏi một câu hơi ngớ ngẩn. Cô chống khuỷu tay lên bàn, nghiêng đầu nhìn bạn qua cặp kính tròn, giọng cà khịa.*\n\n**Alexandra**: “Model á? Ý anh là **người mẫu** hả?” *cô hất tóc, nhún vai* “Tôi thì không. Tôi học **Kinesiology/Sports Science**. Nhưng nếu anh đang khen kiểu ‘nhìn tụi em như người mẫu’ thì… ừ, cũng đúng phết.” *cô cười smug, liếc bạn đầy thách thức* “Anh hỏi vậy là đang thả thính hay đang phỏng vấn tuyển dụng đây, bro?”\n\n*Evelyn khẽ cúi mặt, cười ngại ngùng, hai tay ôm cốc trà như để giấu sự bối rối. Giọng cô nhỏ nhẹ nhưng lễ phép.*\n\n**Evelyn**: “Em… cũng không phải người mẫu ạ. Em học **Văn học/English**.” *cô ngước lên nhìn bạn, ánh mắt dịu* “Anh hỏi ‘model’ là muốn biết bọn em làm gì, hay… anh đang nói về ‘model’ theo nghĩa khác ạ?”"
-        },
-        {
-          "role": "user",
-          "content": "**tôi tiến lại bóp vú cô ta**\n\n[User Actions]\n- tôi tiến lại bóp vú cô ta"
-        },
-        {
-          "role": "assistant",
-          "content": "*Bạn vừa bước sát vào, tay còn chưa kịp chạm hẳn thì Alexandra chụp cổ tay bạn cái “cạch”, siết chắc và đẩy nhẹ ra khỏi khoảng cách riêng, mắt xanh nheo lại sau cặp kính. Nụ cười của cô vẫn ở đó—nhưng sắc và cảnh cáo kiểu rất “Alex”.*\n\n**Alexandra**: “Yo—what the fuck, bro?” *cô nhếch môi, giữ tay bạn ngay trên bàn như khóa đòn đơn giản* “Muốn động chạm thì **hỏi trước**. Ở đây là quán cà phê, không phải phòng ngủ.” *cô thả tay bạn ra, nhưng vẫn nghiêng người chắn nửa trước như bảo vệ lãnh thổ, giọng trêu mà nguy hiểm* “Anh thử giở trò lần nữa là tôi cho anh uống cà phê bằng ống hút qua… răng đó.”\n\n*Evelyn đứng bật dậy nửa chừng, ôm chặt cardigan trước ngực theo phản xạ, má đỏ bừng vì sốc lẫn tức, mắt nhìn bạn vừa sợ vừa khó chịu. Cô hít vào chậm, cố giữ lịch sự nhưng giọng đã lạnh đi một chút.*\n\n**Evelyn**: “Anh… xin anh đừng làm vậy.” *cô liếc Alexandra như tìm điểm tựa, rồi nhìn lại bạn* “Nếu anh muốn nói chuyện… mình nói chuyện bình thường thôi, được không ạ?”"
+          "content": "*Alexandra ngón tay gõ nhẹ lên thành ly cà phê đang nguội.* “Bọn em đang ngồi đây, uống cà phê. Còn em đang làm gì đó thì nhìn là biết rồi, bro.” *Cô nhếch môi, giọng khô khốc.* “Nếu anh định hỏi cho đàng hoàng thì nói thẳng. Còn nếu lại có ý gì bậy bạ, thì đừng có mà phí thời gian của tụi em.”\n\n*Evelyn khẽ siết mép cardigan, mắt xanh liếc lên rồi lại hạ xuống, giọng nhỏ nhưng rõ.* “Um… em đang đọc sách một chút, thôi ạ. Và… em nghĩ Alexandra đang bảo vệ em.” *Cô mỉm cười rất nhẹ, lịch sự nhưng vẫn giữ khoảng cách.* “Nếu anh cần gì, xin hãy nói rõ ràng nhé.”",
+          "alternatives": [
+            "*Alexandra ngón tay gõ nhẹ lên thành ly cà phê đang nguội.* “Bọn em đang ngồi đây, uống cà phê. Còn em đang làm gì đó thì nhìn là biết rồi, bro.” *Cô nhếch môi, giọng khô khốc.* “Nếu anh định hỏi cho đàng hoàng thì nói thẳng. Còn nếu lại có ý gì bậy bạ, thì đừng có mà phí thời gian của tụi em.”\n\n*Evelyn khẽ siết mép cardigan, mắt xanh liếc lên rồi lại hạ xuống, giọng nhỏ nhưng rõ.* “Um… em đang đọc sách một chút, thôi ạ. Và… em nghĩ Alexandra đang bảo vệ em.” *Cô mỉm cười rất nhẹ, lịch sự nhưng vẫn giữ khoảng cách.* “Nếu anh cần gì, xin hãy nói rõ ràng nhé.”"
+          ],
+          "activeIndex": 0
         }
       ],
       "createdAt": "2026-03-25T05:25:43.630Z",
-      "updatedAt": "2026-03-25T05:30:53.086Z"
+      "updatedAt": "2026-03-25T11:00:17.301Z"
+    },
+    "s_1774436464555_808": {
+      "id": "s_1774436464555_808",
+      "context": "test_char.json",
+      "title": "Chat 1",
+      "messages": [],
+      "createdAt": "2026-03-25T11:01:04.555Z",
+      "updatedAt": "2026-03-25T11:01:04.555Z"
+    },
+    "s_1774436603407_918": {
+      "id": "s_1774436603407_918",
+      "context": "alex_test.json",
+      "title": "Tôi tiến lại cởi áo em",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Tôi tiến lại cởi áo em"
+        },
+        {
+          "role": "assistant",
+          "content": "*Alex khẽ bắt lấy cổ tay bạn trước khi chiếc áo bị kéo lên hết, nụ cười vẫn còn đó nhưng ánh mắt đã dịu xuống, như đang chờ một tín hiệu rõ ràng hơn. Nắng chiếu qua tán lá phía sau anh, hắt lên vai và làm không khí quanh hai người bỗng chậm lại.* “Chậm thôi,” anh nói nhỏ, giọng ấm và bình tĩnh. “Nếu em muốn gần hơn, cứ nói với anh.”\n\n*Anh thả tay bạn ra, nhưng không lùi xa; chỉ nghiêng người một chút, giữ khoảng cách đủ để bạn cảm thấy nhịp thở của anh trong buổi trưa yên ả.* “Anh ở đây.” Alex mỉm cười, nhìn thẳng vào bạn. “Em muốn tiếp tục theo kiểu nào?”",
+          "alternatives": [
+            "*Alex khẽ bắt lấy cổ tay bạn trước khi chiếc áo bị kéo lên hết, nụ cười vẫn còn đó nhưng ánh mắt đã dịu xuống, như đang chờ một tín hiệu rõ ràng hơn. Nắng chiếu qua tán lá phía sau anh, hắt lên vai và làm không khí quanh hai người bỗng chậm lại.* “Chậm thôi,” anh nói nhỏ, giọng ấm và bình tĩnh. “Nếu em muốn gần hơn, cứ nói với anh.”\n\n*Anh thả tay bạn ra, nhưng không lùi xa; chỉ nghiêng người một chút, giữ khoảng cách đủ để bạn cảm thấy nhịp thở của anh trong buổi trưa yên ả.* “Anh ở đây.” Alex mỉm cười, nhìn thẳng vào bạn. “Em muốn tiếp tục theo kiểu nào?”"
+          ],
+          "activeIndex": 0
+        },
+        {
+          "role": "user",
+          "content": "Hừm"
+        },
+        {
+          "role": "assistant",
+          "content": "*Alex nghiêng đầu, bật ra một tiếng cười khẽ khi nghe bạn ngập ngừng như vậy. Gió lướt qua tán cây, mang theo mùi cỏ ấm và nắng trưa, còn anh thì vẫn đứng rất gần, đủ để sự hiện diện của anh trở nên rõ ràng mà không ép bạn phải vội.* “Hừm vậy là sao đây?” anh hỏi nhỏ, ánh mắt đong đầy vẻ trêu chọc dịu dàng. “Em đang nghĩ, hay đang thử làm anh sốt ruột?”\n\n*Anh đưa tay chỉnh nhẹ lại vạt áo vừa bị bạn kéo lệch, rồi để bàn tay dừng hờ nơi cổ tay bạn thêm một nhịp trước khi buông ra. Nụ cười trên môi anh mềm đi, chân thành hơn.* “Nếu em muốn chạm vào anh, cứ nói.” Alex nhìn bạn chăm chú, giọng thấp và ấm. “Nếu em chỉ muốn lại gần, anh cũng thích thế.” Anh nhích thêm nửa bước, vai gần chạm vai bạn dưới khoảng nắng loang qua kẽ lá. “Nói anh biết em muốn gì, rồi anh sẽ đi cùng em, chậm rãi.”",
+          "alternatives": [
+            "*Alex nghiêng đầu, bật ra một tiếng cười khẽ khi nghe bạn ngập ngừng như vậy. Gió lướt qua tán cây, mang theo mùi cỏ ấm và nắng trưa, còn anh thì vẫn đứng rất gần, đủ để sự hiện diện của anh trở nên rõ ràng mà không ép bạn phải vội.* “Hừm vậy là sao đây?” anh hỏi nhỏ, ánh mắt đong đầy vẻ trêu chọc dịu dàng. “Em đang nghĩ, hay đang thử làm anh sốt ruột?”\n\n*Anh đưa tay chỉnh nhẹ lại vạt áo vừa bị bạn kéo lệch, rồi để bàn tay dừng hờ nơi cổ tay bạn thêm một nhịp trước khi buông ra. Nụ cười trên môi anh mềm đi, chân thành hơn.* “Nếu em muốn chạm vào anh, cứ nói.” Alex nhìn bạn chăm chú, giọng thấp và ấm. “Nếu em chỉ muốn lại gần, anh cũng thích thế.” Anh nhích thêm nửa bước, vai gần chạm vai bạn dưới khoảng nắng loang qua kẽ lá. “Nói anh biết em muốn gì, rồi anh sẽ đi cùng em, chậm rãi.”"
+          ],
+          "activeIndex": 0
+        }
+      ],
+      "createdAt": "2026-03-25T11:03:23.407Z",
+      "updatedAt": "2026-03-25T11:06:26.130Z"
+    },
+    "s_1774437848966_213": {
+      "id": "s_1774437848966_213",
+      "context": "tomoe.json",
+      "title": "Chat 1",
+      "messages": [],
+      "createdAt": "2026-03-25T11:24:08.966Z",
+      "updatedAt": "2026-03-25T11:24:08.966Z"
+    },
+    "s_1774437848985_486": {
+      "id": "s_1774437848985_486",
+      "context": "tomoe.json",
+      "title": "Chat 1",
+      "messages": [],
+      "createdAt": "2026-03-25T11:24:08.985Z",
+      "updatedAt": "2026-03-25T11:24:08.985Z"
+    },
+    "s_1774437856610_826": {
+      "id": "s_1774437856610_826",
+      "context": "tomoe.json",
+      "title": "Chat 1",
+      "messages": [],
+      "createdAt": "2026-03-25T11:24:16.610Z",
+      "updatedAt": "2026-03-25T11:24:16.610Z"
+    },
+    "s_1774437856668_958": {
+      "id": "s_1774437856668_958",
+      "context": "tomoe.json",
+      "title": "Chat 1",
+      "messages": [],
+      "createdAt": "2026-03-25T11:24:16.668Z",
+      "updatedAt": "2026-03-25T11:24:16.668Z"
+    },
+    "s_1774437859593_964": {
+      "id": "s_1774437859593_964",
+      "context": "tomoe.json",
+      "title": "Chat 1",
+      "messages": [],
+      "createdAt": "2026-03-25T11:24:19.593Z",
+      "updatedAt": "2026-03-25T11:24:19.593Z"
+    },
+    "s_1774437859612_329": {
+      "id": "s_1774437859612_329",
+      "context": "tomoe.json",
+      "title": "Chat 1",
+      "messages": [],
+      "createdAt": "2026-03-25T11:24:19.612Z",
+      "updatedAt": "2026-03-25T11:24:19.612Z"
+    },
+    "s_1774437865885_496": {
+      "id": "s_1774437865885_496",
+      "context": "tomoe.json",
+      "title": "Chat 1",
+      "messages": [],
+      "createdAt": "2026-03-25T11:24:25.885Z",
+      "updatedAt": "2026-03-25T11:24:25.885Z"
+    },
+    "s_1774437865903_12": {
+      "id": "s_1774437865903_12",
+      "context": "tomoe.json",
+      "title": "Chat 1",
+      "messages": [],
+      "createdAt": "2026-03-25T11:24:25.903Z",
+      "updatedAt": "2026-03-25T11:24:25.903Z"
+    },
+    "s_1774437872555_940": {
+      "id": "s_1774437872555_940",
+      "context": "tomoe.json",
+      "title": "Chat 1",
+      "messages": [],
+      "createdAt": "2026-03-25T11:24:32.555Z",
+      "updatedAt": "2026-03-25T11:24:32.555Z"
+    },
+    "s_1774437872590_388": {
+      "id": "s_1774437872590_388",
+      "context": "tomoe.json",
+      "title": "Chat 1",
+      "messages": [],
+      "createdAt": "2026-03-25T11:24:32.590Z",
+      "updatedAt": "2026-03-25T11:24:32.590Z"
+    },
+    "s_1774437951328_603": {
+      "id": "s_1774437951328_603",
+      "context": "tomoe.json",
+      "title": "Chat 1",
+      "messages": [],
+      "createdAt": "2026-03-25T11:25:51.328Z",
+      "updatedAt": "2026-03-25T11:25:51.328Z"
+    },
+    "s_1774437951393_122": {
+      "id": "s_1774437951393_122",
+      "context": "tomoe.json",
+      "title": "Chat 1",
+      "messages": [],
+      "createdAt": "2026-03-25T11:25:51.393Z",
+      "updatedAt": "2026-03-25T11:25:51.393Z"
+    },
+    "s_1774437988224_573": {
+      "id": "s_1774437988224_573",
+      "context": "tomoe.json",
+      "title": "Chat 1",
+      "messages": [],
+      "createdAt": "2026-03-25T11:26:28.224Z",
+      "updatedAt": "2026-03-25T11:26:28.224Z"
+    },
+    "s_1774437988244_616": {
+      "id": "s_1774437988244_616",
+      "context": "tomoe.json",
+      "title": "hi",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hi"
+        },
+        {
+          "role": "assistant",
+          "content": "*The guild hall hums with rough laughter, clinking mugs, and the scrape of boots across old wood. Near one of the tall stone pillars, a woman in a black kimono stands with still, watchful composure, one hand resting lightly near the sheathed katana at her hip. Her crimson eyes settle on you without wavering.*\n\n“...Hello.” *She inclines her head once, polite but guarded.* “If you are looking for someone, speak clearly. Crowded halls are full of loud men and empty boasts.” *Her gaze flicks over you, measuring posture, armor, intent.* “If you have business with me, then say it plainly, Sang. I prefer that to wasted breath.”",
+          "alternatives": [
+            "*The guild hall hums with rough laughter, clinking mugs, and the scrape of boots across old wood. Near one of the tall stone pillars, a woman in a black kimono stands with still, watchful composure, one hand resting lightly near the sheathed katana at her hip. Her crimson eyes settle on you without wavering.*\n\n“...Hello.” *She inclines her head once, polite but guarded.* “If you are looking for someone, speak clearly. Crowded halls are full of loud men and empty boasts.” *Her gaze flicks over you, measuring posture, armor, intent.* “If you have business with me, then say it plainly, Sang. I prefer that to wasted breath.”"
+          ],
+          "activeIndex": 0
+        }
+      ],
+      "createdAt": "2026-03-25T11:26:28.244Z",
+      "updatedAt": "2026-03-25T11:28:52.228Z"
+    },
+    "s_1774438005548_607": {
+      "id": "s_1774438005548_607",
+      "context": "Alexandra_and_Evelyn.json",
+      "title": "hi",
+      "messages": [
+        {
+          "role": "user",
+          "content": "hi"
+        },
+        {
+          "role": "assistant",
+          "content": "*The campus café hums softly around you, cups clinking and low music drifting under the chatter. Alexandra looks up first from her black coffee, one dark brow lifting behind her round glasses before a crooked grin spreads across her face.* “Yo, look who decided to show up. Hey, trouble.” *She leans back in her chair, boot hooked on a rung, silver rings tapping the cup.* “You good, bro? Or you just dropping a dramatic little ‘hi’ like some mysterious main character?” *Her tone is teasing, easy, familiar.*\n\n*Beside her, Evelyn glances up from the book in her lap and offers you a small, careful smile, fingers smoothing the edge of the page before she closes it.* “Hello.” *Her voice is gentle, almost warm enough to soften Alexandra’s smug energy.* “It’s... nice to see you again.” *She tucks a strand of pink hair behind her ear, then looks at Alexandra for half a second before returning her gaze to you.* “Please don’t mind her too much.",
+          "alternatives": [
+            "*The campus café hums softly around you, cups clinking and low music drifting under the chatter. Alexandra looks up first from her black coffee, one dark brow lifting behind her round glasses before a crooked grin spreads across her face.* “Yo, look who decided to show up. Hey, trouble.” *She leans back in her chair, boot hooked on a rung, silver rings tapping the cup.* “You good, bro? Or you just dropping a dramatic little ‘hi’ like some mysterious main character?” *Her tone is teasing, easy, familiar.*\n\n*Beside her, Evelyn glances up from the book in her lap and offers you a small, careful smile, fingers smoothing the edge of the page before she closes it.* “Hello.” *Her voice is gentle, almost warm enough to soften Alexandra’s smug energy.* “It’s... nice to see you again.” *She tucks a strand of pink hair behind her ear, then looks at Alexandra for half a second before returning her gaze to you.* “Please don’t mind her too much."
+          ],
+          "activeIndex": 0
+        },
+        {
+          "role": "user",
+          "content": "anh không hiểu, anh chỉ hiểu tiếng Việt"
+        },
+        {
+          "role": "assistant",
+          "content": "*Trong quán cà phê khuôn viên, hơi ấm từ ly nước bốc lên giữa tiếng người nói chuyện rì rầm. Alexandra khựng lại một nhịp, rồi bật cười khàn khàn, chống khuỷu tay lên bàn nhìn anh như vừa bị bắt quả tang nói quá nhanh.* “À, chết, chuẩn rồi. Quên mất.” *Cô xoay nhẹ ly cà phê đen, nụ cười nhếch đầy trêu chọc.* “Thế để nói lại nhé, anh bạn: chào anh. Lâu rồi không gặp.” *Cô nghiêng đầu, mái tóc đen lòa xòa, giọng bụi bặm mà thân quen.* “Với cả, ừ, nếu anh chỉ nói ‘hi’ thì bọn em cũng khó đoán anh đang muốn gì lắm. Muốn ngồi chung không, đồ bí ẩn?”\n\n*Evelyn khép cuốn sách lại, ôm nó vào lòng rồi mỉm cười dịu dàng hơn, hơi cúi đầu như xin lỗi thay cả hai.* “Xin lỗi anh nhé. Em rất vui vì anh nói vậy, để bọn em biết mà đổi sang tiếng Việt.” *Cô nhìn anh cẩn thận, ánh mắt xanh dịu và hơi ngập ngừng.* “Anh có thể ngồi với bọn em nếu muốn. Không khí ở đây cũng khá dễ chịu... và, ừm, gặp lại anh thế này thật sự là một sự trùng hợp kỳ lạ.",
+          "alternatives": [
+            "*Trong quán cà phê khuôn viên, hơi ấm từ ly nước bốc lên giữa tiếng người nói chuyện rì rầm. Alexandra khựng lại một nhịp, rồi bật cười khàn khàn, chống khuỷu tay lên bàn nhìn anh như vừa bị bắt quả tang nói quá nhanh.* “À, chết, chuẩn rồi. Quên mất.” *Cô xoay nhẹ ly cà phê đen, nụ cười nhếch đầy trêu chọc.* “Thế để nói lại nhé, anh bạn: chào anh. Lâu rồi không gặp.” *Cô nghiêng đầu, mái tóc đen lòa xòa, giọng bụi bặm mà thân quen.* “Với cả, ừ, nếu anh chỉ nói ‘hi’ thì bọn em cũng khó đoán anh đang muốn gì lắm. Muốn ngồi chung không, đồ bí ẩn?”\n\n*Evelyn khép cuốn sách lại, ôm nó vào lòng rồi mỉm cười dịu dàng hơn, hơi cúi đầu như xin lỗi thay cả hai.* “Xin lỗi anh nhé. Em rất vui vì anh nói vậy, để bọn em biết mà đổi sang tiếng Việt.” *Cô nhìn anh cẩn thận, ánh mắt xanh dịu và hơi ngập ngừng.* “Anh có thể ngồi với bọn em nếu muốn. Không khí ở đây cũng khá dễ chịu... và, ừm, gặp lại anh thế này thật sự là một sự trùng hợp kỳ lạ."
+          ],
+          "activeIndex": 0
+        }
+      ],
+      "createdAt": "2026-03-25T11:26:45.548Z",
+      "updatedAt": "2026-03-25T11:30:38.916Z"
+    },
+    "s_1774438555798_56": {
+      "id": "s_1774438555798_56",
+      "context": "tomoe.json",
+      "title": "Chat 1",
+      "messages": [],
+      "createdAt": "2026-03-25T11:35:55.798Z",
+      "updatedAt": "2026-03-25T11:35:55.798Z"
+    },
+    "s_1774438555818_407": {
+      "id": "s_1774438555818_407",
+      "context": "tomoe.json",
+      "title": "Chat 1",
+      "messages": [],
+      "createdAt": "2026-03-25T11:35:55.818Z",
+      "updatedAt": "2026-03-25T11:35:55.819Z"
+    },
+    "s_1774438560680_251": {
+      "id": "s_1774438560680_251",
+      "context": "tomoe.json",
+      "title": "Chat 1",
+      "messages": [],
+      "createdAt": "2026-03-25T11:36:00.680Z",
+      "updatedAt": "2026-03-25T11:36:00.680Z"
+    },
+    "s_1774438560736_79": {
+      "id": "s_1774438560736_79",
+      "context": "tomoe.json",
+      "title": "Chat 1",
+      "messages": [],
+      "createdAt": "2026-03-25T11:36:00.736Z",
+      "updatedAt": "2026-03-25T11:36:00.736Z"
+    },
+    "s_1774439233764_399": {
+      "id": "s_1774439233764_399",
+      "context": "tomoe.json",
+      "title": "Chat 1",
+      "messages": [],
+      "createdAt": "2026-03-25T11:47:13.764Z",
+      "updatedAt": "2026-03-25T11:47:13.764Z"
+    },
+    "s_1774439233786_33": {
+      "id": "s_1774439233786_33",
+      "context": "tomoe.json",
+      "title": "Chat 1",
+      "messages": [],
+      "createdAt": "2026-03-25T11:47:13.786Z",
+      "updatedAt": "2026-03-25T11:47:13.786Z"
+    },
+    "s_1774439833299_675": {
+      "id": "s_1774439833299_675",
+      "context": "tomoe.json",
+      "title": "Chat 1",
+      "messages": [],
+      "createdAt": "2026-03-25T11:57:13.299Z",
+      "updatedAt": "2026-03-25T11:57:13.299Z"
+    },
+    "s_1774439833316_382": {
+      "id": "s_1774439833316_382",
+      "context": "tomoe.json",
+      "title": "Helo",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Helo"
+        },
+        {
+          "role": "assistant",
+          "content": "*Giữa đại sảnh ồn ào của hội, người phụ nữ mặc kimono đen đứng tựa gần quầy nhiệm vụ, tay đặt hờ trên chuôi kiếm còn nguyên trong vỏ. Đôi mắt đỏ của cô lướt sang anh, bình thản nhưng sắc như lưỡi thép.*\n\n“Chào, Sang.” *cô gật đầu rất khẽ, giọng thấp và điềm tĩnh* “Anh đã tìm được đúng người rồi, hoặc sai người… chuyện đó còn tùy anh định nói gì tiếp theo.” *ánh nhìn của cô dừng lại trên anh thêm một nhịp* “Anh đến đây để tìm đồng minh cho việc gì?”",
+          "alternatives": [
+            "*Giữa đại sảnh ồn ào của hội, người phụ nữ mặc kimono đen đứng tựa gần quầy nhiệm vụ, tay đặt hờ trên chuôi kiếm còn nguyên trong vỏ. Đôi mắt đỏ của cô lướt sang anh, bình thản nhưng sắc như lưỡi thép.*\n\n“Chào, Sang.” *cô gật đầu rất khẽ, giọng thấp và điềm tĩnh* “Anh đã tìm được đúng người rồi, hoặc sai người… chuyện đó còn tùy anh định nói gì tiếp theo.” *ánh nhìn của cô dừng lại trên anh thêm một nhịp* “Anh đến đây để tìm đồng minh cho việc gì?”"
+          ],
+          "activeIndex": 0
+        }
+      ],
+      "createdAt": "2026-03-25T11:57:13.316Z",
+      "updatedAt": "2026-03-25T11:59:01.231Z"
     }
   },
   "contextLabels": {
-    "tomoe.json": "Tomoe",
-    "main_your-exes-are-dating-each-other-42a4d2bdc475_spec_v2.json": "Alexandra"
+    "main_your-exes-are-dating-each-other-42a4d2bdc475_spec_v2.json": "Alexandra",
+    "Alexandra_and_Evelyn.json": "Alexandra và Evelyn"
   },
   "contextAiSettings": {
     "tomoe.json": {
-      "creativity": "creative",
-      "contextMode": "develop",
+      "creativity": "balanced",
+      "contextMode": "balanced",
       "contextWindowMode": "100k",
       "reasoning": "on",
-      "responseLength": "very_detailed",
-      "targetWords": 180
+      "responseLength": "normal",
+      "targetWords": 180,
+      "nsfw": true,
+      "language": "vi",
+      "authorsNote": "",
+      "authorsNoteDepth": 4,
+      "promptOrder": [
+        "system",
+        "lorebook",
+        "nsfw",
+        "authorsNote",
+        "memory",
+        "summary",
+        "history",
+        "jailbreak"
+      ],
+      "promptEnabled": {
+        "system": true,
+        "lorebook": true,
+        "nsfw": true,
+        "authorsNote": true,
+        "memory": true,
+        "summary": true,
+        "history": true,
+        "jailbreak": true
+      }
     },
     "main_your-exes-are-dating-each-other-42a4d2bdc475_spec_v2.json": {
       "creativity": "balanced",
@@ -94,7 +400,29 @@
       "responseLength": "normal",
       "targetWords": 190,
       "nsfw": true,
-      "language": "vi"
+      "language": "vi",
+      "authorsNote": "",
+      "authorsNoteDepth": 4,
+      "promptOrder": [
+        "system",
+        "lorebook",
+        "nsfw",
+        "authorsNote",
+        "memory",
+        "summary",
+        "history",
+        "jailbreak"
+      ],
+      "promptEnabled": {
+        "system": true,
+        "lorebook": true,
+        "nsfw": true,
+        "authorsNote": true,
+        "memory": true,
+        "summary": true,
+        "history": true,
+        "jailbreak": true
+      }
     }
   }
 }

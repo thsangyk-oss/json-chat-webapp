@@ -1,17 +1,21 @@
 {
   "facts": [
     "My name is Sang and remember this: I prefer concise replies.",
-    "The user character is named Sang, is a knight from the northern kingdom, and is looking for allies for a dragon-slaying quest."
+    "The user character is named Sang, is a knight from the northern kingdom, and is looking for allies for a dragon-slaying quest.",
+    "Người dùng có thể tên là Sang.",
+    "Người dùng được gọi là Sang."
   ],
   "preferences": [
     "My name is Sang and remember this: I prefer concise replies."
   ],
   "relationships": [
     "A new prospective ally has been introduced, addressing Sang by name and gauging the seriousness of his mission.",
-    "Nhân vật xem người dùng như một hiệp sĩ đang thử phản ứng của mình."
+    "Nhân vật xem người dùng như một hiệp sĩ đang thử phản ứng của mình.",
+    "Mối quan hệ mới ở mức làm quen ban đầu; cô gái chưa xác nhận tin tưởng nhưng sẵn sàng nghe đề nghị."
   ],
   "identity": {
     "name": "Sang",
-    "updatedAt": "2026-03-25T04:26:40.202Z"
-  }
+    "updatedAt": "2026-03-25T11:59:04.330Z"
+  },
+  "conflictCount": 3
 }

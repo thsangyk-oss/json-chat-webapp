@@ -1493,6 +1493,74 @@ button:hover{background:#5a8fd5}.err{color:#ff6b6b;font-size:13px;display:none}<
     }
   }
 
+  // ── Provider helpers ──────────────────────────────────────────────────────
+
+  if (pathname === '/api/providers' && req.method === 'GET') {
+    try {
+      const raw = JSON.parse(fs.readFileSync(BRAIN_FILE, 'utf8'));
+      const providers = raw.providers || [];
+      const activeIdx = Number(raw.activeProvider) || 0;
+      const result = providers.map((p, i) => ({ ...p, active: i === activeIdx }));
+      return json(res, 200, { providers: result, activeProvider: activeIdx });
+    } catch (e) {
+      return json(res, 500, { error: e.message });
+    }
+  }
+
+  if (pathname === '/api/providers' && req.method === 'POST') {
+    try {
+      const body = await readBody(req);
+      const { name, baseUrl, apiKey, models } = body;
+      if (!name || !baseUrl) return json(res, 400, { error: 'name and baseUrl required' });
+
+      const raw = JSON.parse(fs.readFileSync(BRAIN_FILE, 'utf8'));
+      if (!Array.isArray(raw.providers)) {
+        raw.providers = [{
+          name: 'Default',
+          baseUrl: raw.baseUrl || '',
+          apiKey: raw.apiKey || '',
+          models: raw.models || []
+        }];
+        raw.activeProvider = 0;
+      }
+      const newProv = {
+        name: name.trim(),
+        baseUrl: baseUrl.trim(),
+        apiKey: (apiKey || '').trim(),
+        models: Array.isArray(models) ? models.map(m => m.trim()).filter(Boolean) : []
+      };
+      raw.providers.push(newProv);
+      writeBrain(raw);
+      return json(res, 200, { ok: true, providers: raw.providers });
+    } catch (e) {
+      return json(res, 500, { error: e.message });
+    }
+  }
+
+  if (pathname === '/api/provider' && req.method === 'POST') {
+    try {
+      const body = await readBody(req);
+      const providerIndex = Number(body.providerIndex);
+      const model = (body.model || '').trim();
+
+      const raw = JSON.parse(fs.readFileSync(BRAIN_FILE, 'utf8'));
+      if (!Array.isArray(raw.providers) || !raw.providers[providerIndex]) {
+        return json(res, 400, { error: 'Invalid providerIndex' });
+      }
+
+      const prov = raw.providers[providerIndex];
+      raw.activeProvider = providerIndex;
+      raw.baseUrl = prov.baseUrl;
+      raw.apiKey = prov.apiKey;
+      raw.models = prov.models || [];
+      raw.activeModel = model || prov.models?.[0] || raw.activeModel;
+      writeBrain(raw);
+      return json(res, 200, { ok: true });
+    } catch (e) {
+      return json(res, 500, { error: e.message });
+    }
+  }
+
   if (pathname === '/api/contexts' && req.method === 'GET') {
     try {
       const files = fs.readdirSync(CONTEXTS_DIR).filter(f => f.endsWith('.json'));
@@ -1503,6 +1571,44 @@ button:hover{background:#5a8fd5}.err{color:#ff6b6b;font-size:13px;display:none}<
         labels: state.contextLabels || {},
         activeAi: getContextAiSettings(state, state.activeContext)
       });
+    } catch (e) {
+      return json(res, 500, { error: e.message });
+    }
+  }
+
+  if (pathname === '/api/context' && req.method === 'DELETE') {
+    try {
+      const body = await readBody(req);
+      const name = body.name;
+      if (!name) return json(res, 400, { error: 'name required' });
+
+      // Delete the json from contexts/
+      const p = path.join(CONTEXTS_DIR, safeName(name));
+      if (fs.existsSync(p)) {
+        fs.unlinkSync(p);
+      }
+
+      // Delete the memory directory (V2)
+      const memDir = memoryV2DirFor(name);
+      if (fs.existsSync(memDir)) {
+        fs.rmSync(memDir, { recursive: true, force: true });
+      }
+
+      // Delete the memory file (V1) if exists
+      const memFile = memoryFileFor(name);
+      if (fs.existsSync(memFile)) {
+        fs.unlinkSync(memFile);
+      }
+
+      // Update state if the deleted context was active
+      const state = readState();
+      if (state.activeContext === name) {
+        state.activeContext = '';
+        state.activeSessionId = '';
+      }
+      writeState(state);
+
+      return json(res, 200, { ok: true, deleted: name });
     } catch (e) {
       return json(res, 500, { error: e.message });
     }
@@ -1624,18 +1730,103 @@ button:hover{background:#5a8fd5}.err{color:#ff6b6b;font-size:13px;display:none}<
     }
   }
 
+  async function llmValidateAndFixContext(jsonObj, overrideModel = null) {
+    try {
+      if (jsonObj.spec !== 'chara_card_v2' || !jsonObj.data) return null;
+      let d = jsonObj.data;
+      
+      const brain = readBrain();
+      const state = readState();
+      // Lấy ngôn ngữ từ setting (dùng 'vi' làm default nếu chưa có context nào để tham chiếu)
+      const ai = getContextAiSettings(state, 'default');
+      const lang = ai.language === 'en' ? 'English' : 'Vietnamese (tiếng Việt)';
+      
+      const prompt = `You are a character card validator. Review and fix the following character card JSON data.
+
+Rules:
+1. FORMAT: All character speech must be written WITHOUT asterisks. All actions, scene descriptions, and internal thoughts must be wrapped in single asterisks *like this*.
+   Example correct: *She looks at you with a calm expression.* "I understand."
+   Example wrong: She looks at you and says "I understand" and she smiles.
+2. LANGUAGE: All text (speech, narrative, actions, descriptions) must be translated and written entirely in ${lang}. Proper nouns (names) remain unchanged.
+
+Here is the data:
+{
+  "name": ${JSON.stringify(d.name || '')},
+  "description": ${JSON.stringify(d.description || '')},
+  "first_mes": ${JSON.stringify(d.first_mes || '')},
+  "mes_example": ${JSON.stringify(d.mes_example || '')},
+  "scenario": ${JSON.stringify(d.scenario || '')},
+  "alternate_greetings": ${JSON.stringify(d.alternate_greetings || [])}
+}
+
+Return ONLY a valid JSON object with the exact same keys but with the content fixed according to the rules. Do not add markdown or conversational text.`;
+
+      const r = await fetch(`${brain.baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${brain.apiKey}` },
+        body: JSON.stringify({
+          model: overrideModel && overrideModel !== 'none' ? overrideModel : brain.activeModel,
+          messages: [{ role: 'system', content: 'You must output raw, valid JSON only. Do not wrap it in markdown block. Just the { } structure.' }, { role: 'user', content: prompt }],
+          temperature: 0.1
+        })
+      });
+
+      if (!r.ok) return null;
+      const data = await r.json();
+      let raw = (data?.choices?.[0]?.message?.content || '').trim();
+      
+      // Cleanup common markdown wrap
+      if (raw.startsWith('```json')) raw = raw.replace(/^```json/, '');
+      else if (raw.startsWith('```')) raw = raw.replace(/^```/, '');
+      if (raw.endsWith('```')) raw = raw.replace(/```$/, '');
+      raw = raw.trim();
+
+      const fixed = JSON.parse(raw);
+      
+      // Update object
+      if (fixed.description) d.description = fixed.description;
+      if (fixed.first_mes) d.first_mes = fixed.first_mes;
+      if (fixed.mes_example) d.mes_example = fixed.mes_example;
+      if (fixed.scenario) d.scenario = fixed.scenario;
+      if (Array.isArray(fixed.alternate_greetings)) d.alternate_greetings = fixed.alternate_greetings;
+      
+      return { fixedJsonObj: jsonObj, charName: fixed.name || d.name || 'character' };
+    } catch (e) {
+      console.log('LLM fix error:', e.message);
+      return null;
+    }
+  }
+
   if (pathname === '/api/upload-context' && req.method === 'POST') {
     try {
       const body = await readBody(req);
-      let { name, jsonText } = body;
+      let { name, jsonText, model } = body;
       const label = (body.label || '').trim();
       if (!jsonText) return json(res, 400, { error: 'Missing jsonText' });
-      if (!name) name = `context_${Date.now()}.json`;
-      if (!name.endsWith('.json')) name += '.json';
-      name = safeName(name);
-
+      
       // validate json
-      JSON.parse(jsonText);
+      let parsed = JSON.parse(jsonText);
+      
+      // Try Auto-fix
+      let isFixed = false;
+      if (model !== 'none') {
+        const fixResult = await llmValidateAndFixContext(parsed, model);
+        if (fixResult) {
+          parsed = fixResult.fixedJsonObj;
+          name = `${safeName(fixResult.charName)}.json`;
+          jsonText = JSON.stringify(parsed, null, 2);
+          isFixed = true;
+        } else {
+          // Fallback name parsing if LLM fails
+          if (parsed.data && parsed.data.name) name = `${safeName(parsed.data.name)}.json`;
+          else if (!name) name = `context_${Date.now()}.json`;
+        }
+      } else {
+        if (parsed.data && parsed.data.name) name = `${safeName(parsed.data.name)}.json`;
+        else if (!name) name = `context_${Date.now()}.json`;
+      }
+      
+      if (!name.endsWith('.json')) name += '.json';
 
       const p = path.join(CONTEXTS_DIR, name);
       fs.writeFileSync(p, jsonText);
@@ -1647,7 +1838,7 @@ button:hover{background:#5a8fd5}.err{color:#ff6b6b;font-size:13px;display:none}<
       ensureActiveSession(state);
       writeState(state);
 
-      return json(res, 200, { ok: true, name, activeSessionId: state.activeSessionId, label: state.contextLabels[name] || '' });
+      return json(res, 200, { ok: true, name, activeSessionId: state.activeSessionId, label: state.contextLabels[name] || '', fixedByLLM: isFixed });
     } catch (e) {
       return json(res, 500, { error: e.message });
     }
