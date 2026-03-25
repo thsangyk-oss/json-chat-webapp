@@ -1,0 +1,15 @@
+# Runtime/state (private)
+data/state.json
+data/brain.json
+data/user_profile.json
+
+# Conversational memory & private profiles
+data/memory/
+data/nsfw-profiles/
+
+# Local logs
+nohup.out
+
+# Private contexts
+contexts/yue.json
+contexts/main_your-exes-are-dating-each-other-42a4d2bdc475_spec_v2.json
