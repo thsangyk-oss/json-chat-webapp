@@ -12,6 +12,10 @@
     .wrap{max-width:900px;margin:0 auto;padding:10px}
     .top{position:sticky;top:0;background:var(--bg);padding:8px 0;z-index:5}
     .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    #customConfirm{background:var(--card);color:var(--text);border:1px solid #2d3a50;border-radius:14px;padding:20px;max-width:320px;margin:auto;box-shadow:0 10px 30px rgba(0,0,0,0.5)}
+    #customConfirm::backdrop{background:rgba(0,0,0,0.6);backdrop-filter:blur(3px)}
+    #customConfirm p{margin:0 0 20px 0;font-size:15px;line-height:1.4;text-align:center;}
+    #customConfirm .actions{display:flex;justify-content:flex-end;gap:10px}
     .banner{display:flex;align-items:center;justify-content:space-between;background:var(--card);border-radius:12px;padding:10px 12px;margin-bottom:8px}
     .banner-title{font-weight:700;font-size:14px;letter-spacing:.2px}
     .icon-btn{width:40px;height:40px;display:flex;align-items:center;justify-content:center;padding:0;border-radius:10px;font-size:18px;line-height:1}
@@ -21,6 +25,7 @@
     button{background:var(--accent);color:white;font-weight:600}
     button.secondary{background:#2a3040;color:#d5def0}
     button.danger{background:var(--danger)}
+    input[type="range"]{width:100%;max-width:100%;padding:8px 0;background:transparent;box-sizing:border-box;display:block}
     #chat{display:flex;flex-direction:column;gap:8px;padding:10px 0 120px}
     .msg{padding:10px 12px;border-radius:14px;max-width:86%;white-space:pre-wrap;line-height:1.4}
     .me{align-self:flex-end;background:#2a457a}
@@ -35,11 +40,12 @@
     .hidden{display:none}
     #settingsSheet{margin-bottom:8px}
     .settings-grid{display:grid;grid-template-columns:1fr;gap:10px}
-    .settings-card{background:#141820;border:1px solid #252d3a;border-radius:12px;padding:0}
+    .settings-card{background:#141820;border:1px solid #252d3a;border-radius:12px;padding:0;overflow:hidden;min-width:0}
     .settings-card summary{list-style:none;cursor:pointer;padding:12px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:700}
     .settings-card summary::-webkit-details-marker{display:none}
     .settings-card .content{padding:0 12px 12px;overflow-x:hidden;max-width:100%;box-sizing:border-box}
-    .stack{display:flex;flex-direction:column;gap:8px}
+    .stack{display:flex;flex-direction:column;gap:8px;min-width:0;overflow:hidden}
+    .stack label{word-break:break-word;max-width:100%}
     .actions{display:flex;gap:8px;flex-wrap:wrap}
     #contextMainActions{flex-wrap:nowrap;overflow-x:auto}
     #contextMainActions button{white-space:nowrap}
@@ -87,19 +93,45 @@
     .prompt-block label{flex:1;font-size:13px}
     .prompt-block button{background:#2a3040;color:#d5def0;font-size:12px;padding:4px 8px;border-radius:6px;font-weight:400}
     /* Add provider form */
-    #addProviderForm{display:none;flex-direction:column;gap:6px;margin-top:6px;padding:8px;background:#0f1320;border-radius:10px}
+    #addProviderForm{display:none;flex-direction:column;gap:6px;margin-top:6px;padding:10px;background:#0f1320;border-radius:10px;border:1px solid #2b3444}
+    /* Provider list */
+    .provider-item{background:#0f1320;border:1px solid #2b3444;border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:6px}
+    .provider-item.active-prov{border-color:#4f8cff}
+    .provider-item-header{display:flex;align-items:center;gap:8px;min-width:0}
+    .provider-item-name{font-weight:700;font-size:13px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .provider-item-badge{font-size:10px;background:#1a3060;color:#8ec5ff;border-radius:4px;padding:2px 6px;flex-shrink:0}
+    .provider-item-btns{display:flex;gap:4px;flex-shrink:0}
+    .prov-btn{background:#2a3040;color:#d5def0;border-radius:6px;font-size:11px;padding:3px 8px;font-weight:400;border:none;cursor:pointer}
+    .prov-btn.danger{background:var(--danger)}
+    .prov-btn.primary{background:var(--accent)}
+    .provider-item-url{font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    /* Edit provider inline form */
+    .prov-edit-form{display:none;flex-direction:column;gap:6px;margin-top:4px;padding:8px;background:#141820;border-radius:8px;border:1px solid #252d3a}
+    .prov-edit-form.open{display:flex}
+    .prov-model-select{width:100%;margin-top:4px}
   </style>
 </head>
 <body>
   <div class="wrap">
+    <dialog id="customConfirm">
+      <p id="customConfirmText">Are you sure?</p>
+      <div class="actions">
+        <button id="customConfirmCancel" class="secondary">Cancel</button>
+        <button id="customConfirmOk" class="danger">OK</button>
+      </div>
+    </dialog>
+
     <div class="top">
       <div class="banner">
         <div class="banner-title" id="botTitle">JSON Context Bot</div>
-        <button id="toggleSettingsBtn" class="secondary icon-btn" title="Settings" aria-label="Settings">⚙️</button>
+        <div style="display:flex;gap:6px;align-items:center">
+          <select id="quickModelSelect" style="background:#1e2638;color:#c8d6e8;border:1px solid #2d3a50;border-radius:8px;padding:4px 8px;font-size:12px;max-width:160px;cursor:pointer" title="Quick model switch"></select>
+          <button id="toggleSettingsBtn" class="secondary icon-btn" title="Settings" aria-label="Settings">⚙️</button>
+        </div>
       </div>
       <div id="settingsSheet" class="panel hidden">
         <div class="settings-grid">
-          <details class="settings-card full" open>
+          <details class="settings-card full">
             <summary>Context</summary>
             <div class="content stack">
               <select id="contextSelect"></select>
@@ -111,9 +143,10 @@
                 <button id="switchBtn">Switch</button>
                 <button id="newChatBtn" class="secondary">New chat</button>
                 <button id="resetBtn" class="secondary">Clear</button>
+                <button id="deleteContextBtn" class="danger">🗑️ Delete</button>
               </div>
 
-              <div class="settings-card" style="padding:10px; border:1px solid #2b3444;">
+              <div class="settings-card" style="padding:10px; border:1px solid #2b3444; overflow:hidden;">
                 <div class="settings-title" style="margin-bottom:6px;">AI tuning for this JSON bot</div>
                 <div class="stack">
                   <label>Creativity</label>
@@ -193,7 +226,7 @@
           </details>
 
           <details class="settings-card">
-            <summary>Upload JSON Context</summary>
+            <summary>📂 Upload JSON Context</summary>
             <div class="content stack">
               <div class="actions">
                 <input id="uploadName" placeholder="new-context.json" style="flex:1;min-width:140px;" />
@@ -203,34 +236,35 @@
               </div>
               <textarea id="uploadJson" class="hidden" placeholder="Paste JSON context here..."></textarea>
               <div class="actions hidden" id="uploadActions">
-                <button id="uploadBtn">Save & Switch</button>
+                <select id="normalizeModel" style="background:#1e2638;color:#c8d6e8;border:1px solid #2d3a50;border-radius:8px;padding:4px 8px;font-size:12px;max-width:140px" title="Model cho normalize"></select>
+                <button id="normalizeBtn" class="secondary" title="AI dịch &amp; chuẩn hoá JSON">✨ Normalize</button>
+                <span id="normalizeStatus" style="font-size:11px;color:var(--muted);display:none">⏳ đang xử lý…</span>
+                <button id="uploadBtn">Save &amp; Switch</button>
                 <button id="cancelUploadBtn" class="secondary">Cancel</button>
               </div>
             </div>
           </details>
 
           <details class="settings-card full">
-            <summary>Brain (Proxy API)</summary>
+            <summary>🧠 Brain (API Providers)</summary>
             <div class="content stack">
-              <label>Provider</label>
-              <select id="brainProvider"></select>
-              <label>Model</label>
-              <select id="brainModel"></select>
-              <button id="addProviderBtn" class="secondary" style="font-size:12px">+ Add Provider</button>
-              <div id="addProviderForm">
-                <input id="newProvName" placeholder="Provider name" />
-                <input id="newProvUrl" placeholder="Base URL" />
-                <input id="newProvKey" placeholder="API Key" />
-                <input id="newProvModels" placeholder="model1, model2" />
-                <button id="saveNewProvBtn" class="secondary">Save Provider</button>
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span style="font-size:12px;color:var(--muted)">Providers</span>
+                <button id="addProviderBtn" class="secondary" style="font-size:11px;padding:4px 10px">+ Add</button>
               </div>
-              <input id="brainBaseUrl" placeholder="Base URL (e.g. https://.../v1)" />
-              <input id="brainApiKey" placeholder="API Key" />
-              <input id="brainActiveModel" placeholder="Active model (e.g. gpt-5.4-mini)" />
-              <textarea id="brainModels" placeholder="Model list, one per line"></textarea>
-              <div class="actions">
-                <button id="saveBrainBtn">Save brain</button>
-                <button id="reloadBrainBtn" class="secondary">Reload</button>
+
+              <div id="providerList" class="stack"></div>
+
+              <div id="addProviderForm">
+                <div style="font-size:12px;color:var(--muted);font-weight:700;margin-bottom:2px">New Provider</div>
+                <input id="newProvName" placeholder="Provider name (e.g. OpenAI)" />
+                <input id="newProvUrl" placeholder="Base URL (e.g. https://api.openai.com/v1)" />
+                <input id="newProvKey" placeholder="API Key" />
+                <input id="newProvModels" placeholder="Models (comma-separated, e.g. gpt-4o, gpt-4o-mini)" />
+                <div class="actions">
+                  <button id="saveNewProvBtn" class="secondary">Save Provider</button>
+                  <button id="cancelNewProvBtn" class="secondary">Cancel</button>
+                </div>
               </div>
             </div>
           </details>
@@ -284,6 +318,19 @@
               <div id="promptBlocks"></div>
               <div class="actions">
                 <button id="savePromptOrderBtn" class="secondary">Save Order</button>
+              </div>
+            </div>
+          </details>
+
+          <details class="settings-card full">
+            <summary>👤 User Profile</summary>
+            <div class="content stack">
+              <label>Tên của bạn (thay thế {user})</label>
+              <input id="userName" placeholder="Ví dụ: Minh, Anh, ..." />
+              <label>Mô tả (AI sẽ biết về bạn)</label>
+              <textarea id="userDescription" rows="3" placeholder="Ví dụ: Là một chàng trai 22 tuổi, hiếu động, thích phưu lưu..."></textarea>
+              <div class="actions">
+                <button id="saveUserProfileBtn" class="secondary">Save</button>
               </div>
             </div>
           </details>
@@ -342,10 +389,11 @@
     }
 
     // msgIndex = position in conversation (for edit API), charName optional for group
-    function addMsg(text, who='bot', { msgIndex = -1, charName = null, isTyping = false } = {}) {
+    function addMsg(text, who='bot', { msgIndex = -1, charName = null, isTyping = false, noSave = false } = {}) {
       // Wrapper div
       const wrapper = document.createElement('div');
       wrapper.className = `msg-wrapper${who === 'me' ? ' me-wrap' : ''}`;
+      if (noSave) wrapper.dataset.nosave = 'true';
 
       // Character label (group mode)
       if (charName) {
@@ -380,8 +428,8 @@
       // Tap to toggle edit bar on mobile
       div.addEventListener('click', () => wrapper.classList.toggle('show-edit'));
 
-      // Swipe controls (only for bot messages)
-      if (who === 'bot' && !isTyping && msgIndex >= 0) {
+      // Swipe controls (only for bot messages, ignore noSave messages)
+      if (who === 'bot' && !isTyping && msgIndex >= 0 && !noSave) {
         const sw = swipeMap[msgIndex];
         const total = sw ? sw.variants.length : 1;
         const current = sw ? sw.current + 1 : 1;
@@ -496,6 +544,26 @@
       }
     }
 
+    // Bypass webview blocking 'window.confirm'
+    function showConfirm(msg) {
+      return new Promise(resolve => {
+        const dialog = $('customConfirm');
+        $('customConfirmText').textContent = msg;
+        dialog.showModal();
+        const cancelBtn = $('customConfirmCancel');
+        const okBtn = $('customConfirmOk');
+        
+        function cleanup() {
+          cancelBtn.onclick = null;
+          okBtn.onclick = null;
+          dialog.close();
+        }
+        
+        cancelBtn.onclick = () => { cleanup(); resolve(false); };
+        okBtn.onclick = () => { cleanup(); resolve(true); };
+      });
+    }
+
     function clearChat() {
       chatEl.innerHTML = '';
     }
@@ -567,14 +635,9 @@
       }
     }
 
+    // loadBrain is now handled by loadProviders()
     async function loadBrain() {
-      const r = await fetch('/api/brain');
-      const j = await r.json();
-      if (j.error) return;
-      $('brainBaseUrl').value = j.baseUrl || '';
-      $('brainApiKey').value = j.apiKey || '';
-      $('brainActiveModel').value = j.activeModel || '';
-      $('brainModels').value = (j.models || []).join('\n');
+      await loadProviders();
     }
 
     async function loadAiSettingsFor(contextName) {
@@ -664,22 +727,36 @@
       $('conflictLine').textContent = n ? `Conflicts: ${n} (latest: ${j.items[0].type})` : 'Conflicts: 0';
     }
 
-    async function saveBrain() {
-      const baseUrl = $('brainBaseUrl').value.trim();
-      const apiKey = $('brainApiKey').value.trim();
-      const activeModel = $('brainActiveModel').value.trim();
-      const models = $('brainModels').value.split('\n').map(x => x.trim()).filter(Boolean);
-
-      const r = await fetch('/api/brain', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ baseUrl, apiKey, activeModel, models })
-      });
-      const j = await r.json();
-      if (j.error) return alert(j.error);
-      addMsg('Brain updated ✅', 'bot');
-      await loadBrain();
+    async function deleteContext() {
+      const name = contextSelect.value;
+      if (!name) return;
+      const label = contextLabels[name] || name;
+      const confirmed = await showConfirm(`Xoá nhân vật "${label}" (${name}) và toàn bộ memory, lorebook, chat history?\nHành động này KHÔNG thể hoàn tác!`);
+      if (!confirmed) return;
+      try {
+        const r = await fetch('/api/context', {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': window.authToken ? `Bearer ${window.authToken}` : ''
+          },
+          body: JSON.stringify({ name })
+        });
+        const j = await r.json();
+        if (j.error) return alert('Lỗi: ' + j.error);
+        await loadContexts();
+        await loadSessions();
+        await loadMessages();
+        await loadMemory(contextSelect.value);
+        await loadLorebook(contextSelect.value);
+        addMsg(`Đã xoá nhân vật "${label}" ✅`, 'bot');
+      } catch (e) {
+        alert('Lỗi: ' + e.message);
+      }
     }
+
+    // saveBrain is now handled by editProvider() / saveNewProvider()
+    async function saveBrain() {}
 
     // ── Lorebook UI ──
     let lorebookData = [];
@@ -881,6 +958,111 @@
 
     // ── Multi-API / Providers ──
     let providersData = [];
+    let activeProviderIdx = 0;
+    let activeModelName = '';
+
+    function renderProviderList() {
+      const container = $('providerList');
+      if (!container) return;
+      container.innerHTML = '';
+      if (!providersData.length) {
+        container.innerHTML = '<div class="meta">No providers yet. Click "+ Add" to add one.</div>';
+        return;
+      }
+      providersData.forEach((p, idx) => {
+        const isActive = idx === activeProviderIdx;
+        const el = document.createElement('div');
+        el.className = 'provider-item' + (isActive ? ' active-prov' : '');
+
+        // Header row
+        const hdr = document.createElement('div');
+        hdr.className = 'provider-item-header';
+        const nameEl = document.createElement('span');
+        nameEl.className = 'provider-item-name';
+        nameEl.textContent = p.name || `Provider ${idx+1}`;
+        hdr.appendChild(nameEl);
+        if (isActive) {
+          const badge = document.createElement('span');
+          badge.className = 'provider-item-badge';
+          badge.textContent = '● ACTIVE';
+          hdr.appendChild(badge);
+        }
+        const btns = document.createElement('div');
+        btns.className = 'provider-item-btns';
+        // Use button
+        if (!isActive) {
+          const useBtn = document.createElement('button');
+          useBtn.className = 'prov-btn primary';
+          useBtn.textContent = 'Use';
+          useBtn.onclick = () => switchToProvider(idx, (p.models || [])[0] || '');
+          btns.appendChild(useBtn);
+        }
+        // Edit button
+        const editBtn = document.createElement('button');
+        editBtn.className = 'prov-btn';
+        editBtn.textContent = '✏️';
+        editBtn.onclick = () => {
+          const form = el.querySelector('.prov-edit-form');
+          form.classList.toggle('open');
+        };
+        btns.appendChild(editBtn);
+        // Delete button
+        const delBtn = document.createElement('button');
+        delBtn.className = 'prov-btn danger';
+        delBtn.textContent = '✕';
+        delBtn.onclick = () => deleteProvider(idx);
+        btns.appendChild(delBtn);
+        hdr.appendChild(btns);
+        el.appendChild(hdr);
+
+        // URL
+        const urlEl = document.createElement('div');
+        urlEl.className = 'provider-item-url';
+        urlEl.textContent = p.baseUrl || '';
+        el.appendChild(urlEl);
+
+        // Model selector (if active provider)
+        if (isActive && p.models && p.models.length) {
+          const modelRow = document.createElement('div');
+          modelRow.style.cssText = 'display:flex;gap:6px;align-items:center';
+          const modelLabel = document.createElement('span');
+          modelLabel.style.cssText = 'font-size:11px;color:var(--muted);flex-shrink:0';
+          modelLabel.textContent = 'Model:';
+          const modelSel = document.createElement('select');
+          modelSel.className = 'prov-model-select';
+          modelSel.style.cssText = 'flex:1;font-size:12px;padding:4px 6px;border-radius:6px';
+          p.models.forEach(m => {
+            const op = document.createElement('option');
+            op.value = m; op.textContent = m;
+            if (m === activeModelName) op.selected = true;
+            modelSel.appendChild(op);
+          });
+          modelSel.onchange = () => switchToProvider(idx, modelSel.value);
+          modelRow.appendChild(modelLabel);
+          modelRow.appendChild(modelSel);
+          el.appendChild(modelRow);
+        }
+
+        // Inline edit form
+        const editForm = document.createElement('div');
+        editForm.className = 'prov-edit-form';
+        editForm.innerHTML = `
+          <input class="ef-name" value="${p.name || ''}" placeholder="Name" />
+          <input class="ef-url" value="${p.baseUrl || ''}" placeholder="Base URL" />
+          <input class="ef-key" value="${p.apiKey || ''}" placeholder="API Key" type="password" />
+          <input class="ef-models" value="${(p.models||[]).join(', ')}" placeholder="Models (comma-separated)" />
+          <div class="actions">
+            <button class="secondary ef-save" style="font-size:12px">Save</button>
+            <button class="secondary ef-cancel" style="font-size:12px">Cancel</button>
+          </div>
+        `;
+        editForm.querySelector('.ef-save').onclick = () => editProvider(idx, editForm);
+        editForm.querySelector('.ef-cancel').onclick = () => editForm.classList.remove('open');
+        el.appendChild(editForm);
+
+        container.appendChild(el);
+      });
+    }
 
     async function loadProviders() {
       try {
@@ -888,54 +1070,95 @@
         const j = await r.json();
         if (j.error) return;
         providersData = j.providers || [];
-        const provSel = $('brainProvider');
-        const modelSel = $('brainModel');
-        provSel.innerHTML = '';
-        providersData.forEach((p, idx) => {
-          const op = document.createElement('option');
-          op.value = idx;
-          op.textContent = p.name || p.baseUrl || `Provider ${idx+1}`;
-          if (p.active) op.selected = true;
-          provSel.appendChild(op);
+        activeProviderIdx = j.activeProviderIdx ?? 0;
+        activeModelName = j.activeModel || '';
+        renderProviderList();
+        // Populate quick model selector and normalize model selector
+        const quickSel = $('quickModelSelect');
+        const normSel = $('normalizeModel');
+        [quickSel, normSel].forEach(sel => {
+          if (!sel) return;
+          const prevVal = sel.value;
+          sel.innerHTML = '';
+          providersData.forEach((p, pidx) => {
+            (p.models || []).forEach(m => {
+              const op = document.createElement('option');
+              op.value = JSON.stringify({ pidx, model: m });
+              op.textContent = (providersData.length > 1 ? `[${p.name||pidx}] ` : '') + m;
+              if (m === activeModelName && pidx === activeProviderIdx) op.selected = true;
+              sel.appendChild(op);
+            });
+          });
+          if (!sel.options.length && activeModelName) {
+            const op = document.createElement('option');
+            op.value = JSON.stringify({ pidx: 0, model: activeModelName });
+            op.textContent = activeModelName; op.selected = true;
+            sel.appendChild(op);
+          }
+          // Restore previous selection if still valid
+          if (prevVal) { try { sel.value = prevVal; } catch {} }
         });
-        updateModelDropdown();
+
       } catch {}
     }
 
-    function updateModelDropdown() {
-      const modelSel = $('brainModel');
-      if (!modelSel) return;
-      const idx = +($('brainProvider').value || 0);
-      const prov = providersData[idx];
-      modelSel.innerHTML = '';
-      if (prov && prov.models) {
-        prov.models.forEach(m => {
-          const op = document.createElement('option');
-          op.value = m;
-          op.textContent = m;
-          if (m === prov.activeModel) op.selected = true;
-          modelSel.appendChild(op);
-        });
-      }
-    }
-
-    async function switchProvider() {
-      const idx = +($('brainProvider').value || 0);
-      const model = $('brainModel').value;
-      const prov = providersData[idx];
-      if (!prov) return;
+    async function switchToProvider(pidx, model) {
       try {
         const r = await fetch('/api/provider', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ providerIndex: idx, model })
+          body: JSON.stringify({ providerIndex: pidx, model })
         });
         const j = await r.json();
-        if (j.error) return alert(j.error);
-        addMsg(`Provider switched to ${prov.name || prov.baseUrl}, model: ${model} ✅`, 'bot');
+        if (j.error) return addMsg('[Provider error] ' + j.error, 'bot');
+        activeProviderIdx = pidx;
+        activeModelName = model || j.activeModel;
+        renderProviderList();
+        // sync quick select
+        const quickSel = $('quickModelSelect');
+        if (quickSel) {
+          for (const op of quickSel.options) {
+            try {
+              const v = JSON.parse(op.value);
+              op.selected = v.pidx === pidx && v.model === activeModelName;
+            } catch {}
+          }
+        }
+        addMsg(`✅ Active: ${providersData[pidx]?.name || 'Provider'} → ${activeModelName}`, 'bot');
       } catch (e) {
         addMsg('[Provider error] ' + e.message, 'bot');
       }
+    }
+
+    async function editProvider(idx, form) {
+      const name = form.querySelector('.ef-name').value.trim();
+      const baseUrl = form.querySelector('.ef-url').value.trim();
+      const apiKey = form.querySelector('.ef-key').value.trim();
+      const models = form.querySelector('.ef-models').value.split(',').map(s => s.trim()).filter(Boolean);
+      if (!name || !baseUrl) return alert('Name and Base URL required');
+      try {
+        const r = await fetch('/api/providers/' + idx, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, baseUrl, apiKey, models })
+        });
+        const j = await r.json();
+        if (j.error) return alert(j.error);
+        await loadProviders();
+        addMsg(`Provider "${name}" updated ✅`, 'bot');
+      } catch (e) { alert(e.message); }
+    }
+
+    async function deleteProvider(idx) {
+      const p = providersData[idx];
+      if (!confirm(`Delete provider "${p?.name || idx}"?`)) return;
+      try {
+        const r = await fetch('/api/providers/' + idx, { method: 'DELETE' });
+        const j = await r.json();
+        if (j.error) return alert(j.error);
+        await loadProviders();
+        addMsg(`Provider deleted ✅`, 'bot');
+      } catch (e) { alert(e.message); }
     }
 
     async function saveNewProvider() {
@@ -952,10 +1175,8 @@
         });
         const j = await r.json();
         if (j.error) return alert(j.error);
-        $('newProvName').value = '';
-        $('newProvUrl').value = '';
-        $('newProvKey').value = '';
-        $('newProvModels').value = '';
+        $('newProvName').value = ''; $('newProvUrl').value = '';
+        $('newProvKey').value = ''; $('newProvModels').value = '';
         $('addProviderForm').style.display = 'none';
         await loadProviders();
         addMsg(`Provider "${name}" added ✅`, 'bot');
@@ -978,28 +1199,77 @@
     // Prompt Manager
     $('savePromptOrderBtn').onclick = savePromptOrder;
 
-    // Multi-API
+    // Brain / Providers
     $('addProviderBtn').onclick = () => {
       const form = $('addProviderForm');
       form.style.display = form.style.display === 'none' ? 'flex' : 'none';
     };
+    $('cancelNewProvBtn').onclick = () => { $('addProviderForm').style.display = 'none'; };
     $('saveNewProvBtn').onclick = saveNewProvider;
-    $('brainProvider').onchange = () => { updateModelDropdown(); switchProvider(); };
-    $('brainModel').onchange = switchProvider;
+
+
+    // Quick model select in banner
+    $('quickModelSelect').onchange = async () => {
+      try {
+        const val = JSON.parse($('quickModelSelect').value);
+        const r = await fetch('/api/provider', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ providerIndex: val.pidx, model: val.model })
+        });
+        const j = await r.json();
+        if (j.error) return;
+        // sync the brain model dropdowns too
+        $('brainProvider').value = val.pidx;
+        updateModelDropdown();
+        $('brainModel').value = val.model;
+      } catch {}
+    };
+
+    // User Profile
+    $('saveUserProfileBtn').onclick = saveUserProfile;
+
 
     // Author's Note depth label
     $('aiNoteDepth').oninput = () => { $('aiNoteDepthLabel').textContent = $('aiNoteDepth').value; };
+
+    async function loadUserProfile() {
+      try {
+        const r = await fetch('/api/user-profile');
+        const j = await r.json();
+        if (j.error) return;
+        $('userName').value = j.name || '';
+        $('userDescription').value = j.description || '';
+      } catch {}
+    }
+
+    async function saveUserProfile() {
+      const name = $('userName').value.trim();
+      const description = $('userDescription').value.trim();
+      try {
+        const r = await fetch('/api/user-profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, description })
+        });
+        const j = await r.json();
+        if (j.error) return alert(j.error);
+        addMsg(`User profile saved: ${name || '(no name)'} ✅`, 'bot');
+      } catch (e) {
+        alert('Lỗi: ' + e.message);
+      }
+    }
 
     async function reloadAll() {
       await loadContexts();
       await loadSessions();
       await loadMessages();
-      await loadBrain();
       await loadMemory(contextSelect.value);
       await loadConflicts(contextSelect.value);
       await loadLorebook(contextSelect.value);
       await loadProviders();
       await loadPromptOrder();
+      await loadUserProfile();
     }
 
     async function switchContext() {
@@ -1017,6 +1287,65 @@
       await loadMemory(name);
       await loadConflicts(name);
       await loadLorebook(name);
+
+      // Show first message if chat is empty
+      if (j.firstMessage && chatEl.querySelectorAll('.msg-wrapper:not([data-nosave="true"])').length === 0) {
+        const charName = j.charName || name.replace('.json', '');
+        $('botTitle').textContent = charName;
+        addMsg(j.firstMessage, 'bot', { noSave: true });
+      }
+    }
+
+    async function normalizeContext() {
+      const jsonText = $('uploadJson').value.trim();
+      if (!jsonText) return addMsg('⚠️ Paste JSON trước khi normalize!', 'bot');
+
+      // Validate JSON first
+      try { JSON.parse(jsonText); } catch { return addMsg('⚠️ JSON không hợp lệ! Vui lòng kiểm tra lại.', 'bot'); }
+
+      const lang = $('aiLanguage') ? $('aiLanguage').value : 'vi';
+      // Get selected model from normalizeModel dropdown
+      const nmSel = $('normalizeModel');
+      let overrideModel = null;
+      if (nmSel && nmSel.value) {
+        try { overrideModel = JSON.parse(nmSel.value); } catch {}
+      }
+
+      const statusEl = $('normalizeStatus');
+      const btn = $('normalizeBtn');
+      statusEl.style.display = 'inline';
+      btn.disabled = true;
+      btn.textContent = '⏳';
+
+      try {
+        const r = await fetch('/api/context/normalize', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': window.authToken ? `Bearer ${window.authToken}` : ''
+          },
+          body: JSON.stringify({ jsonText, language: lang, overrideModel })
+        });
+        const j = await r.json();
+        if (j.error) {
+          addMsg('⚠️ Lỗi Normalize: ' + j.error, 'bot');
+          return;
+        }
+        $('uploadJson').value = j.jsonText;
+
+        // Auto-set filename from character name
+        if (j.charName) {
+          const safeFn = j.charName.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') + '.json';
+          $('uploadName').value = safeFn;
+        }
+        addMsg(`✅ Đã normalize “${j.charName || 'nhân vật'}” sang ${lang === 'vi' ? 'Tiếng Việt' : 'English'}! Kiểm tra JSON rồi nhấn “Save & Switch”.`, 'bot');
+      } catch (e) {
+        addMsg('⚠️ Lỗi: ' + e.message, 'bot');
+      } finally {
+        statusEl.style.display = 'none';
+        btn.disabled = false;
+        btn.textContent = '✨ Normalize';
+      }
     }
 
     async function send() {
@@ -1024,7 +1353,7 @@
       if (!msg) return;
       inputEl.value = '';
       // Get current message count for index
-      const msgCount = chatEl.querySelectorAll('.msg-wrapper').length;
+      const msgCount = chatEl.querySelectorAll('.msg-wrapper:not([data-nosave="true"])').length;
       addMsg(msg, 'me', { msgIndex: msgCount });
 
       // Create assistant bubble with typing indicator
@@ -1086,20 +1415,28 @@
                 if (chunk.reasoning && typeof chunk.reasoning.reasoningContent === 'string') {
                   reasoningContent = chunk.reasoning.reasoningContent;
                 }
-                // Reasoning block
-                if (reasoningContent || (chunk.reasoning && chunk.reasoning.enabled)) {
-                  const rt = chunk.reasoning && chunk.reasoning.reasoningTokens || 0;
-                  reasoningStatusEl.textContent = rt > 0
-                    ? `Reasoning: ✅ active · tokens ${rt}`
-                    : `Reasoning: ⚠ requested but hidden`;
-                  if (reasoningContent) {
-                    const details = document.createElement('details');
-                    details.className = 'reasoning-block';
-                    details.innerHTML = `<summary>Reasoning (${rt} tokens)</summary><pre>${reasoningContent.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre>`;
-                    botWrapper.insertBefore(details, botBubble.nextSibling);
-                  }
+                // Info block (Model, Tokens, Reasoning)
+                let statusParts = [];
+                const info = chunk.info || chunk.reasoning || {};
+                
+                if (info.model) statusParts.push(`Model: ${info.model.split('/').pop()}`);
+                if (info.totalTokens) statusParts.push(`Tokens: ${info.totalTokens}`);
+
+                const rt = info.reasoningTokens || 0;
+                if (rt > 0) statusParts.push(`Reasoning: ${rt}`);
+                else if (info.enabled) statusParts.push(`Reasoning: hidden`);
+
+                if (statusParts.length > 0) {
+                  reasoningStatusEl.textContent = statusParts.join(' • ');
                 } else {
                   reasoningStatusEl.textContent = 'Reasoning: OFF';
+                }
+
+                if (reasoningContent) {
+                  const details = document.createElement('details');
+                  details.className = 'reasoning-block';
+                  details.innerHTML = `<summary>Reasoning (${rt} tokens)</summary><pre>${reasoningContent.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre>`;
+                  botWrapper.insertBefore(details, botBubble.nextSibling);
                 }
                 await loadSessions();
                 // Add swipe controls now that msg is final
@@ -1156,10 +1493,14 @@
     async function deleteSession() {
       const sessionId = sessionSelect.value;
       if (!sessionId) return;
-      if (!confirm('Delete this chat?')) return;
+      const confirmed = await showConfirm('Delete this chat?');
+      if (!confirmed) return;
       const r = await fetch('/api/sessions/delete', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': window.authToken ? `Bearer ${window.authToken}` : ''
+        },
         body: JSON.stringify({ sessionId })
       });
       const j = await r.json();
@@ -1169,8 +1510,16 @@
     }
 
     async function resetCurrent() {
-      if (!confirm('Clear messages of current chat?')) return;
-      await fetch('/api/reset', { method: 'POST' });
+      const confirmed = await showConfirm('Clear messages of current chat?');
+      if (!confirmed) return;
+      const r = await fetch('/api/reset', {
+        method: 'POST',
+        headers: {
+          'Authorization': window.authToken ? `Bearer ${window.authToken}` : ''
+        }
+      });
+      const j = await r.json();
+      if (j.error) return alert(j.error);
       await loadMessages();
       await loadSessions();
     }
@@ -1183,7 +1532,7 @@
     async function uploadContext() {
       const name = $('uploadName').value.trim() || `context_${Date.now()}.json`;
       const jsonText = $('uploadJson').value.trim();
-      if (!jsonText) return alert('Paste JSON first');
+      if (!jsonText) return addMsg('⚠️ Paste JSON first', 'bot');
 
       const r = await fetch('/api/upload-context', {
         method: 'POST',
@@ -1191,12 +1540,18 @@
         body: JSON.stringify({ name, jsonText })
       });
       const j = await r.json();
-      if (j.error) return alert(j.error);
+      if (j.error) return addMsg('⚠️ Lỗi: ' + j.error, 'bot');
 
       $('uploadJson').value = '';
+      $('uploadName').value = '';
       toggleUpload(false);
       await reloadAll();
-      addMsg(`Context uploaded & switched: ${j.name}`, 'bot');
+      addMsg(`✅ Đã lưu và switch sang “${j.charName || j.name}”!`, 'bot');
+
+      // Show first_mes as intro if chat is empty
+      if (j.firstMessage) {
+        addMsg(j.firstMessage, 'bot', { noSave: true });
+      }
     }
 
     function insertAtCursor(el, text) {
@@ -1223,6 +1578,7 @@
     $('openSessionBtn').onclick = openSession;
     $('deleteSessionBtn').onclick = deleteSession;
     $('resetBtn').onclick = resetCurrent;
+    $('deleteContextBtn').onclick = deleteContext;
 
     $('saveLabelBtn').onclick = async () => {
       const name = contextSelect.value;
@@ -1251,6 +1607,7 @@
     $('toggleUploadBtn').onclick = () => toggleUpload($('uploadJson').classList.contains('hidden'));
     $('cancelUploadBtn').onclick = () => toggleUpload(false);
     $('uploadBtn').onclick = uploadContext;
+    $('normalizeBtn').onclick = normalizeContext;
 
     $('pickFileBtn').onclick = () => $('uploadFile').click();
     $('uploadFile').onchange = async (e) => {
@@ -1262,8 +1619,6 @@
       toggleUpload(true);
     };
 
-    $('saveBrainBtn').onclick = saveBrain;
-    $('reloadBrainBtn').onclick = loadBrain;
     $('saveAiBtn').onclick = saveAiSettings;
     $('aiTargetWords').oninput = () => { $('aiTargetWordsLabel').textContent = $('aiTargetWords').value; };
     $('saveMemoryBtn').onclick = saveMemory;

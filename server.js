@@ -449,6 +449,17 @@ function memoryFileFor(contextName) {
   return path.join(MEMORY_DIR, `${safe}.memory.md`);
 }
 
+const USER_PROFILE_FILE = path.join(DATA_DIR, 'user_profile.json');
+
+function readUserProfile() {
+  if (!fs.existsSync(USER_PROFILE_FILE)) return { name: 'User', description: '' };
+  try { return JSON.parse(fs.readFileSync(USER_PROFILE_FILE, 'utf8')); } catch { return { name: 'User', description: '' }; }
+}
+
+function writeUserProfile(profile) {
+  fs.writeFileSync(USER_PROFILE_FILE, JSON.stringify(profile, null, 2));
+}
+
 function memoryV2DirFor(contextName) {
   const safe = safeName(contextName.replace(/\.json$/i, ''));
   return path.join(MEMORY_DIR, safe);
@@ -923,27 +934,43 @@ function loadContext(filename) {
   const p = path.join(CONTEXTS_DIR, filename);
   if (!fs.existsSync(p)) throw new Error(`Context not found: ${filename}`);
   const raw = JSON.parse(fs.readFileSync(p, 'utf8'));
+  const user = readUserProfile();
+  const userName = user.name || 'User';
+
+  function replacePlaceholders(text, charName) {
+    return (text || '')
+      .replace(/\{\{char\}\}/gi, charName)
+      .replace(/\{char\}/gi, charName)
+      .replace(/\{\{user\}\}/gi, userName)
+      .replace(/\{user\}/gi, userName);
+  }
 
   if (raw.spec === 'chara_card_v2' && raw.data) {
     const d = raw.data;
+    const charName = d.name || filename;
     return {
-      name: d.name || filename,
-      systemPrompt: [
-        `You are ${d.name || 'the character'}. Stay in character consistently.`,
+      name: charName,
+      systemPrompt: replacePlaceholders([
+        `You are ${charName}. Stay in character consistently.`,
         d.description || '',
         d.scenario ? `Scenario:\n${d.scenario}` : '',
         d.personality ? `Personality:\n${d.personality}` : '',
         d.post_history_instructions ? `Instructions:\n${d.post_history_instructions}` : ''
-      ].filter(Boolean).join('\n\n'),
-      firstMessage: d.first_mes || '',
+      ].filter(Boolean).join('\n\n'), charName),
+      firstMessage: replacePlaceholders(d.first_mes || '', charName),
+      userName,
+      userDescription: user.description || '',
       raw
     };
   }
 
+  const charName = raw.name || filename;
   return {
-    name: raw.name || filename,
-    systemPrompt: raw.system_prompt || raw.systemPrompt || 'You are a helpful roleplay assistant.',
-    firstMessage: raw.first_message || raw.firstMessage || '',
+    name: charName,
+    systemPrompt: replacePlaceholders(raw.system_prompt || raw.systemPrompt || 'You are a helpful roleplay assistant.', charName),
+    firstMessage: replacePlaceholders(raw.first_message || raw.firstMessage || '', charName),
+    userName,
+    userDescription: user.description || '',
     raw
   };
 }
@@ -1127,10 +1154,10 @@ async function chatCompletion(messages, ai) {
   const brain = readBrain();
   const lenCfg = responseLengthConfig(ai);
   const payload = {
-    model: brain.activeModel,
+    model: ai.overrideModel || brain.activeModel,
     messages,
     ...buildSamplingParams(ai),
-    max_completion_tokens: lenCfg.maxOut,
+    max_completion_tokens: ai.max_tokens || lenCfg.maxOut,
   };
 
   if (ai.reasoning === 'on') {
@@ -1202,10 +1229,10 @@ async function chatCompletionStream(messages, ai, res) {
   const brain = readBrain();
   const lenCfg = responseLengthConfig(ai);
   const payload = {
-    model: brain.activeModel,
+    model: ai.overrideModel || brain.activeModel,
     messages,
     ...buildSamplingParams(ai),
-    max_completion_tokens: lenCfg.maxOut,
+    max_completion_tokens: ai.max_tokens || lenCfg.maxOut,
     stream: true,
   };
 
@@ -1230,6 +1257,7 @@ async function chatCompletionStream(messages, ai, res) {
   let fullReply = '';
   let reasoningContent = '';
   let reasoningTokens = 0;
+  let totalTokens = 0;
   let model = brain.activeModel;
 
   // Parse SSE stream
@@ -1266,9 +1294,16 @@ async function chatCompletionStream(messages, ai, res) {
           res.write(`data: ${JSON.stringify({ token, done: false })}\n\n`);
         }
 
-        // Accumulate reasoning tokens from usage if present
-        if (chunk.usage?.completion_tokens_details?.reasoning_tokens) {
-          reasoningTokens = chunk.usage.completion_tokens_details.reasoning_tokens;
+        // Accumulate tokens from usage if present
+        if (chunk.usage) {
+          if (chunk.usage.completion_tokens_details?.reasoning_tokens) {
+            reasoningTokens = chunk.usage.completion_tokens_details.reasoning_tokens;
+          }
+          if (chunk.usage.total_tokens) {
+            totalTokens = chunk.usage.total_tokens;
+          } else if (chunk.usage.completion_tokens) {
+            totalTokens = chunk.usage.completion_tokens; // fallback
+          }
         }
       } catch {
         // ignore parse errors for individual chunks
@@ -1277,7 +1312,71 @@ async function chatCompletionStream(messages, ai, res) {
   }
 
   fullReply = applyHardLengthCap(fullReply, lenCfg);
-  return { content: fullReply, reasoningContent, reasoningTokens, model };
+  return { content: fullReply, reasoningContent, reasoningTokens, totalTokens, model };
+}
+
+/**
+ * Gather streamed chunks internally to bypass proxy timeouts (like Cloudflare 524)
+ * Returns {content} after the full stream finishes.
+ */
+async function chatCompletionGatherStream(messages, ai) {
+  const brain = readBrain();
+  const lenCfg = responseLengthConfig(ai);
+  const payload = {
+    model: ai.overrideModel || brain.activeModel,
+    messages,
+    ...buildSamplingParams(ai),
+    max_completion_tokens: ai.max_tokens || lenCfg.maxOut,
+    stream: true,
+  };
+
+  if (ai.reasoning === 'on') {
+    payload.reasoning = { effort: 'medium' };
+  }
+
+  const r = await fetch(`${brain.baseUrl}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${brain.apiKey}`
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!r.ok) {
+    const txt = await r.text();
+    throw new Error(`LLM ${r.status}: ${txt}`);
+  }
+
+  let fullReply = '';
+  const reader = r.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+
+    const lines = buffer.split('\n');
+    buffer = lines.pop(); // keep incomplete line
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || !trimmed.startsWith('data:')) continue;
+      const data = trimmed.slice(5).trim();
+      if (data === '[DONE]') continue;
+
+      try {
+        const chunk = JSON.parse(data);
+        const delta = chunk?.choices?.[0]?.delta || {};
+        const token = delta.content || '';
+        if (token) fullReply += token;
+      } catch {}
+    }
+  }
+
+  return { content: fullReply };
 }
 
 /**
@@ -1493,6 +1592,139 @@ button:hover{background:#5a8fd5}.err{color:#ff6b6b;font-size:13px;display:none}<
     }
   }
 
+  // ── Get providers list ──
+  if (pathname === '/api/providers' && req.method === 'GET') {
+    try {
+      if (!checkAuth(req, parsed)) return json(res, 401, { error: 'Unauthorized' });
+      const raw = JSON.parse(fs.readFileSync(BRAIN_FILE, 'utf8'));
+      const activeProviderIdx = Number(raw.activeProvider) || 0;
+      const providers = (raw.providers || []).map((p, i) => ({
+        ...p,
+        // Don't expose apiKey in GET
+        apiKey: p.apiKey ? '••••' : '',
+      }));
+      return json(res, 200, { providers, activeProviderIdx, activeModel: raw.activeModel });
+    } catch (e) {
+      return json(res, 500, { error: e.message });
+    }
+  }
+
+  // ── Edit provider by index ──
+  if (pathname.startsWith('/api/providers/') && req.method === 'PUT') {
+    try {
+      if (!checkAuth(req, parsed)) return json(res, 401, { error: 'Unauthorized' });
+      const idx = parseInt(pathname.replace('/api/providers/', ''), 10);
+      const body = await readBody(req);
+      const raw = JSON.parse(fs.readFileSync(BRAIN_FILE, 'utf8'));
+      if (!raw.providers || !raw.providers[idx]) return json(res, 404, { error: 'Provider not found' });
+      const existing = raw.providers[idx];
+      raw.providers[idx] = {
+        name: (body.name || existing.name || '').trim(),
+        baseUrl: (body.baseUrl || existing.baseUrl || '').trim(),
+        // Keep existing apiKey if not provided or placeholder sent
+        apiKey: (body.apiKey && !body.apiKey.startsWith('••')) ? body.apiKey.trim() : (existing.apiKey || ''),
+        models: Array.isArray(body.models) ? body.models.map(m => m.trim()).filter(Boolean) : existing.models || []
+      };
+      writeBrain(raw);
+      return json(res, 200, { ok: true, providers: raw.providers });
+    } catch (e) {
+      return json(res, 500, { error: e.message });
+    }
+  }
+
+  // ── Delete provider by index ──
+  if (pathname.startsWith('/api/providers/') && req.method === 'DELETE') {
+    try {
+      if (!checkAuth(req, parsed)) return json(res, 401, { error: 'Unauthorized' });
+      const idx = parseInt(pathname.replace('/api/providers/', ''), 10);
+      const raw = JSON.parse(fs.readFileSync(BRAIN_FILE, 'utf8'));
+      if (!raw.providers || !raw.providers[idx]) return json(res, 404, { error: 'Provider not found' });
+      if (raw.providers.length === 1) return json(res, 400, { error: 'Cannot delete last provider' });
+      raw.providers.splice(idx, 1);
+      // Adjust active provider index if needed
+      const activeIdx = Number(raw.activeProvider) || 0;
+      if (idx <= activeIdx) raw.activeProvider = Math.max(0, activeIdx - 1);
+      const nowActive = raw.providers[raw.activeProvider];
+      if (nowActive) {
+        raw.baseUrl = nowActive.baseUrl;
+        raw.apiKey = nowActive.apiKey;
+        raw.models = nowActive.models;
+      }
+      writeBrain(raw);
+      return json(res, 200, { ok: true, providers: raw.providers });
+    } catch (e) {
+      return json(res, 500, { error: e.message });
+    }
+  }
+
+  // ── User Profile ──
+  if (pathname === '/api/user-profile' && req.method === 'GET') {
+    try {
+      if (!checkAuth(req, parsed)) return json(res, 401, { error: 'Unauthorized' });
+      return json(res, 200, readUserProfile());
+    } catch (e) {
+      return json(res, 500, { error: e.message });
+    }
+  }
+
+  if (pathname === '/api/user-profile' && req.method === 'POST') {
+    try {
+      if (!checkAuth(req, parsed)) return json(res, 401, { error: 'Unauthorized' });
+      const body = await readBody(req);
+      const profile = { name: (body.name || '').trim(), description: (body.description || '').trim() };
+      writeUserProfile(profile);
+      return json(res, 200, { ok: true, ...profile });
+    } catch (e) {
+      return json(res, 500, { error: e.message });
+    }
+  }
+
+  // ── Add provider ──
+
+  if (pathname === '/api/providers' && req.method === 'POST') {
+    try {
+      if (!checkAuth(req, parsed)) return json(res, 401, { error: 'Unauthorized' });
+      const body = await readBody(req);
+      const { name, baseUrl, apiKey, models } = body;
+      if (!name || !baseUrl) return json(res, 400, { error: 'name and baseUrl required' });
+      const raw = JSON.parse(fs.readFileSync(BRAIN_FILE, 'utf8'));
+      if (!raw.providers) raw.providers = [];
+      const newProv = {
+        name: name.trim(),
+        baseUrl: baseUrl.trim(),
+        apiKey: (apiKey || '').trim(),
+        models: Array.isArray(models) ? models.map(m => m.trim()).filter(Boolean) : []
+      };
+      raw.providers.push(newProv);
+      writeBrain(raw);
+      return json(res, 200, { ok: true, providers: raw.providers });
+    } catch (e) {
+      return json(res, 500, { error: e.message });
+    }
+  }
+
+  // ── Switch active provider / model ──
+  if (pathname === '/api/provider' && req.method === 'POST') {
+    try {
+      if (!checkAuth(req, parsed)) return json(res, 401, { error: 'Unauthorized' });
+      const body = await readBody(req);
+      const providerIndex = Number(body.providerIndex);
+      const model = (body.model || '').trim();
+      const raw = JSON.parse(fs.readFileSync(BRAIN_FILE, 'utf8'));
+      if (!raw.providers || !raw.providers[providerIndex]) return json(res, 400, { error: 'Invalid providerIndex' });
+      raw.activeProvider = providerIndex;
+      if (model) raw.activeModel = model;
+      const prov = raw.providers[providerIndex];
+      raw.baseUrl = prov.baseUrl;
+      raw.apiKey = prov.apiKey;
+      raw.models = prov.models;
+      writeBrain(raw);
+      return json(res, 200, { ok: true, activeProvider: providerIndex, activeModel: raw.activeModel });
+    } catch (e) {
+      return json(res, 500, { error: e.message });
+    }
+  }
+
   if (pathname === '/api/contexts' && req.method === 'GET') {
     try {
       const files = fs.readdirSync(CONTEXTS_DIR).filter(f => f.endsWith('.json'));
@@ -1514,7 +1746,7 @@ button:hover{background:#5a8fd5}.err{color:#ff6b6b;font-size:13px;display:none}<
       const name = body.name;
       const label = (body.label || '').trim();
       if (!name || name.includes('..')) return json(res, 400, { error: 'Invalid name' });
-      loadContext(name);
+      const ctx = loadContext(name);
 
       const state = readState();
       state.activeContext = name;
@@ -1523,7 +1755,99 @@ button:hover{background:#5a8fd5}.err{color:#ff6b6b;font-size:13px;display:none}<
       ensureActiveSession(state);
       writeState(state);
 
-      return json(res, 200, { ok: true, active: name, activeSessionId: state.activeSessionId, label: state.contextLabels[name] || '' });
+      return json(res, 200, {
+        ok: true,
+        active: name,
+        activeSessionId: state.activeSessionId,
+        label: state.contextLabels[name] || '',
+        firstMessage: ctx.firstMessage || '',
+        charName: ctx.name || name
+      });
+    } catch (e) {
+      return json(res, 500, { error: e.message });
+    }
+  }
+
+  // ── Normalize JSON context with LLM ──
+  if (pathname === '/api/context/normalize' && req.method === 'POST') {
+    try {
+      if (!checkAuth(req, parsed)) return json(res, 401, { error: 'Unauthorized' });
+      const body = await readBody(req);
+      const { jsonText, language, overrideModel } = body;
+      if (!jsonText) return json(res, 400, { error: 'jsonText required' });
+
+      // Parse to extract fields
+      let card;
+      try { card = JSON.parse(jsonText); } catch { return json(res, 400, { error: 'Invalid JSON' }); }
+
+      const langLabel = language === 'vi' ? 'Vietnamese (Tiếng Việt)'
+                      : language === 'en' ? 'English'
+                      : language || 'Vietnamese';
+
+      // Build a summary of fields to normalize
+      const isV2 = card.spec === 'chara_card_v2' && card.data;
+      const d = isV2 ? card.data : card;
+      const fieldsToNormalize = {
+        name: d.name || '',
+        description: d.description || '',
+        personality: d.personality || '',
+        scenario: d.scenario || '',
+        first_mes: d.first_mes || d.first_message || d.firstMessage || '',
+        post_history_instructions: d.post_history_instructions || d.systemPrompt || d.system_prompt || ''
+      };
+
+      const systemPrompt = `You are an expert at normalizing AI roleplay character card JSON files.
+Your task: rewrite specific fields from the provided character card into ${langLabel}.
+
+Rules:
+1. Translate ALL text fields to ${langLabel} — INCLUDING personality, description, scenario, first_mes
+2. In first_mes: use **...**  (double asterisks) for actions/context/narration; plain text for character's spoken words
+3. NEVER replace {char} or {user} — keep them as literal placeholder strings
+4. In post_history_instructions, APPEND (do not replace) this instruction: "Always respond in ${langLabel}. Use **...** for actions/narration and plain text for speech. Call the user by their name when referring to them."
+5. Return ONLY a valid JSON object with these exact keys: name, description, personality, scenario, first_mes, post_history_instructions
+6. Do NOT add any explanation, markdown, or extra text outside the JSON`;
+
+      const userMsg = `Character card fields to normalize:\n${JSON.stringify(fieldsToNormalize, null, 2)}`;
+
+      const ai = { creativity: 'balanced', reasoning: 'off', responseLength: 'very_detailed', max_tokens: 20000, overrideModel: overrideModel?.model };
+      const result = await chatCompletionGatherStream([
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userMsg }
+      ], ai);
+
+      // Parse LLM response
+      let normalized;
+      try {
+        const raw = result.content.trim();
+        const jsonMatch = raw.match(/```(?:json)?\s*([\s\S]+?)```/) || [null, raw];
+        normalized = JSON.parse(jsonMatch[1].trim());
+      } catch (e) {
+        return json(res, 500, { error: 'LLM returned invalid JSON: ' + result.content.substring(0, 200) });
+      }
+
+      // Merge back into original structure
+      if (isV2) {
+        card.data.name = normalized.name || card.data.name;
+        card.data.description = normalized.description || card.data.description;
+        card.data.personality = normalized.personality || card.data.personality;
+        card.data.scenario = normalized.scenario || card.data.scenario;
+        card.data.first_mes = normalized.first_mes || card.data.first_mes;
+        card.data.post_history_instructions = normalized.post_history_instructions || card.data.post_history_instructions;
+      } else {
+        card.name = normalized.name || card.name;
+        card.description = normalized.description || card.description;
+        card.personality = normalized.personality || card.personality;
+        card.scenario = normalized.scenario || card.scenario;
+        card.first_mes = normalized.first_mes || card.first_mes;
+        card.first_message = normalized.first_mes || card.first_message;
+        card.system_prompt = normalized.post_history_instructions || card.system_prompt;
+        card.post_history_instructions = normalized.post_history_instructions || card.post_history_instructions;
+      }
+
+      const finalCard = JSON.stringify(card, null, 2);
+      const charName = normalized.name || (isV2 ? card.data?.name : card.name) || '';
+      return json(res, 200, { ok: true, jsonText: finalCard, charName });
+
     } catch (e) {
       return json(res, 500, { error: e.message });
     }
@@ -1640,14 +1964,27 @@ button:hover{background:#5a8fd5}.err{color:#ff6b6b;font-size:13px;display:none}<
       const p = path.join(CONTEXTS_DIR, name);
       fs.writeFileSync(p, jsonText);
 
+      const ctx = loadContext(name);
+      const charName = ctx.name || name.replace(/\.json$/i, '');
+
       const state = readState();
       state.activeContext = name;
+      // Auto-set label to character name if not provided
       if (label) state.contextLabels[name] = label;
+      else if (!state.contextLabels[name]) state.contextLabels[name] = charName;
       ensureMemoryV2(name);
       ensureActiveSession(state);
       writeState(state);
 
-      return json(res, 200, { ok: true, name, activeSessionId: state.activeSessionId, label: state.contextLabels[name] || '' });
+      return json(res, 200, {
+        ok: true,
+        name,
+        activeSessionId: state.activeSessionId,
+        label: state.contextLabels[name] || charName,
+        firstMessage: ctx.firstMessage || '',
+        charName
+      });
+
     } catch (e) {
       return json(res, 500, { error: e.message });
     }
@@ -1783,7 +2120,7 @@ button:hover{background:#5a8fd5}.err{color:#ff6b6b;font-size:13px;display:none}<
       writeState(state);
       scheduleSessionMaintenance(state.activeContext, state.activeSessionId, ai, userText, assistantText);
 
-      res.write(`data: ${JSON.stringify({ done: true, content: assistantText, reasoning: { enabled: ai.reasoning === 'on', reasoningTokens: assistant.reasoningTokens || 0, reasoningContent: assistant.reasoningContent || '', model: assistant.model } })}\n\n`);
+      res.write(`data: ${JSON.stringify({ done: true, content: assistantText, info: { enabled: ai.reasoning === 'on', reasoningTokens: assistant.reasoningTokens || 0, reasoningContent: assistant.reasoningContent || '', model: assistant.model, totalTokens: assistant.totalTokens || 0 } })}\n\n`);
       return res.end();
     } catch (e) {
       try { res.write(`data: ${JSON.stringify({ error: e.message, done: true })}\n\n`); } catch {}
@@ -2081,7 +2418,58 @@ Output ONLY a valid JSON array. No markdown, no explanation.`;
     }
   }
 
+  // ── Delete Context ──
+  if (pathname === '/api/context' && req.method === 'DELETE') {
+    try {
+      if (!checkAuth(req, parsed)) return json(res, 401, { error: 'Unauthorized' });
+      const body = await readBody(req);
+      const name = body.name;
+      if (!name || name.includes('..')) return json(res, 400, { error: 'Invalid name' });
+
+      const ctxFile = path.join(CONTEXTS_DIR, name);
+      if (!fs.existsSync(ctxFile)) return json(res, 404, { error: 'Context not found' });
+
+      // 1. Delete context JSON file
+      fs.unlinkSync(ctxFile);
+
+      // 2. Delete memory .memory.md file
+      const memFile = memoryFileFor(name);
+      if (fs.existsSync(memFile)) fs.unlinkSync(memFile);
+
+      // 3. Delete memory v2 directory (profile, episodes, etc.)
+      const memDir = memoryV2DirFor(name);
+      if (fs.existsSync(memDir)) fs.rmSync(memDir, { recursive: true, force: true });
+
+      // 4. Delete lorebook file
+      const lbFile = lorebookFileFor(name);
+      if (fs.existsSync(lbFile)) fs.unlinkSync(lbFile);
+
+      // 5. Clean up state: sessions, labels, aiSettings
+      const state = readState();
+      // Remove all sessions for this context
+      for (const [sid, s] of Object.entries(state.sessions || {})) {
+        if (s.context === name) delete state.sessions[sid];
+      }
+      delete state.contextLabels[name];
+      delete state.contextAiSettings[name];
+
+      // Switch active context if needed
+      if (state.activeContext === name) {
+        const remaining = fs.readdirSync(CONTEXTS_DIR).filter(f => f.endsWith('.json'));
+        state.activeContext = remaining[0] || null;
+        state.activeSessionId = null;
+        if (state.activeContext) ensureActiveSession(state);
+      }
+
+      writeState(state);
+      return json(res, 200, { ok: true, deleted: name, activeContext: state.activeContext });
+    } catch (e) {
+      return json(res, 500, { error: e.message });
+    }
+  }
+
   // static
+
   let filePath = pathname === '/' ? path.join(PUBLIC_DIR, 'index.html') : path.join(PUBLIC_DIR, pathname);
   if (!filePath.startsWith(PUBLIC_DIR)) {
     res.writeHead(403);
