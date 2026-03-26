@@ -50,6 +50,8 @@ const NSFW_PRESETS = {
   }
 };
 const GROUPS_DIR = path.join(BASE, 'data', 'groups');
+const PROMPT_ORDER_FILE = path.join(DATA_DIR, 'prompt-order.json');
+const GROUP_SETTINGS_FILE = path.join(DATA_DIR, 'group-settings.json');
 
 // ── Auth ──
 function ensureAuth() {
@@ -592,6 +594,51 @@ function readNdjson(file) {
 
 function writeJson(file, data) {
   fs.writeFileSync(file, JSON.stringify(data, null, 2));
+}
+
+function readPromptOrder() {
+  ensureDirs();
+  if (!fs.existsSync(PROMPT_ORDER_FILE)) return { blocks: [] };
+  try {
+    const raw = JSON.parse(fs.readFileSync(PROMPT_ORDER_FILE, 'utf8'));
+    return { blocks: Array.isArray(raw?.blocks) ? raw.blocks : [] };
+  } catch {
+    return { blocks: [] };
+  }
+}
+
+function writePromptOrder(data) {
+  ensureDirs();
+  atomicWriteJson(PROMPT_ORDER_FILE, { blocks: Array.isArray(data?.blocks) ? data.blocks : [] });
+}
+
+function defaultGroupSettings() {
+  return { groupName: '', members: [], talkOrder: 'round-robin' };
+}
+
+function readGroupSettings() {
+  ensureDirs();
+  if (!fs.existsSync(GROUP_SETTINGS_FILE)) return defaultGroupSettings();
+  try {
+    const raw = JSON.parse(fs.readFileSync(GROUP_SETTINGS_FILE, 'utf8'));
+    return {
+      groupName: String(raw?.groupName || '').trim(),
+      members: Array.isArray(raw?.members) ? raw.members.map(x => String(x).trim()).filter(Boolean) : [],
+      talkOrder: raw?.talkOrder === 'ai-decides' ? 'ai-decides' : 'round-robin'
+    };
+  } catch {
+    return defaultGroupSettings();
+  }
+}
+
+function writeGroupSettings(data) {
+  ensureDirs();
+  const next = {
+    groupName: String(data?.groupName || '').trim(),
+    members: Array.isArray(data?.members) ? data.members.map(x => String(x).trim()).filter(Boolean) : [],
+    talkOrder: data?.talkOrder === 'ai-decides' ? 'ai-decides' : 'round-robin'
+  };
+  atomicWriteJson(GROUP_SETTINGS_FILE, next);
 }
 
 const memoryOpQueues = new Map();
@@ -1785,6 +1832,52 @@ button:hover{background:#5a8fd5}.err{color:#ff6b6b;font-size:13px;display:none}<
       const profile = { name: (body.name || '').trim(), description: (body.description || '').trim() };
       writeUserProfile(profile);
       return json(res, 200, { ok: true, ...profile });
+    } catch (e) {
+      return json(res, 500, { error: e.message });
+    }
+  }
+
+  if (pathname === '/api/group-settings' && req.method === 'GET') {
+    try {
+      if (!checkAuth(req, parsed)) return json(res, 401, { error: 'Unauthorized' });
+      return json(res, 200, readGroupSettings());
+    } catch (e) {
+      return json(res, 500, { error: e.message });
+    }
+  }
+
+  if (pathname === '/api/group-settings' && req.method === 'POST') {
+    try {
+      if (!checkAuth(req, parsed)) return json(res, 401, { error: 'Unauthorized' });
+      const body = await readBody(req);
+      const next = {
+        groupName: (body.groupName || '').trim(),
+        members: Array.isArray(body.members) ? body.members : [],
+        talkOrder: body.talkOrder === 'ai-decides' ? 'ai-decides' : 'round-robin'
+      };
+      writeGroupSettings(next);
+      return json(res, 200, { ok: true, ...next });
+    } catch (e) {
+      return json(res, 500, { error: e.message });
+    }
+  }
+
+  if (pathname === '/api/prompt-order' && req.method === 'GET') {
+    try {
+      if (!checkAuth(req, parsed)) return json(res, 401, { error: 'Unauthorized' });
+      return json(res, 200, readPromptOrder());
+    } catch (e) {
+      return json(res, 500, { error: e.message });
+    }
+  }
+
+  if (pathname === '/api/prompt-order' && req.method === 'POST') {
+    try {
+      if (!checkAuth(req, parsed)) return json(res, 401, { error: 'Unauthorized' });
+      const body = await readBody(req);
+      const next = { blocks: Array.isArray(body.blocks) ? body.blocks : [] };
+      writePromptOrder(next);
+      return json(res, 200, { ok: true, blocks: next.blocks });
     } catch (e) {
       return json(res, 500, { error: e.message });
     }
